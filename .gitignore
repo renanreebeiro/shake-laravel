@@ -2,6 +2,9 @@
 /vendor/
 /storage/logs/*.log
 /storage/framework/sessions/*
+!/storage/framework/sessions/.gitkeep
 /storage/framework/views/*
+!/storage/framework/views/.gitkeep
 /storage/framework/cache/*
+!/storage/framework/cache/.gitkeep
 /bootstrap/cache/*.php
