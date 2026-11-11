@@ -1,0 +1,14 @@
+Recibo nº {{num}} | Emissão: {{emissao}}
+
+Recebi de {{recebi}}, CPF/CNPJ {{cpf_pag}}, o valor de {{valor}} ({{extenso}}), pago via {{forma_pag}}, referente a {{referente}}.
+
+Evento: {{evento}}
+Data do evento: {{data_evento}}
+Local: {{local}}
+
+{{cidade}}, {{emissao}}.
+
+
+________________________________________
+{{nome_resp}}
+CPF/CNPJ: {{cpf_resp}}

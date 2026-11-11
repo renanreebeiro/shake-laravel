@@ -1,0 +1,79 @@
+CONTRATADO: SHAKE BURGER HAMBURGUERIA LTDA, inscrita no CNPJ sob o n.º 38089344/0001-91, sediada na Alameda Paulo Maranhão, n.º 105, Bairro Nazaré, CEP 66040-330, Belém/PA, e-mail: shakeburgerbelem@gmail.com, telefone: (91) 984498606, doravante denominada Contratada.
+
+CONTRATANTE: {{nome}}, brasileiro(a), {{estado}}, portador(a) do RG n.º {{rg}} e do {{tipo_doc}} n.º {{cpf}}, residente e domiciliado(a) na {{endereco}}, doravante denominado(a) Contratante.
+
+As partes acima qualificadas têm entre si, justo e contratado, o presente Contrato de Prestação de Serviços, que se regerá pelas cláusulas e condições a seguir estipuladas.
+
+CLÁUSULA PRIMEIRA – DO OBJETO
+
+A Contratada fornecerá à Contratante o serviço de entrega de {{quantidade}} mini burgers (pão, carne e queijo), compreendendo as seguintes atividades:
+
+a) Produção de {{quantidade}} mini burgers (pão, carne e queijo) nas instalações da Contratada;
+
+b) Entrega da quantidade contratada em embalagem térmica personalizada, {{entrega_objeto}}.
+
+A Contratada obriga-se a executar os serviços com colaboradores padronizados, observando rigorosos padrões de qualidade, higiene e limpeza.
+
+CLÁUSULA SEGUNDA – DA DATA E HORA DO EVENTO
+
+O {{evento}} será realizado em {{data_evento}}. A Contratada responsabilizar-se-á pela entrega de todos os mini burgers, em embalagem térmica personalizada, até as {{hora}} do referido dia.
+
+CLÁUSULA TERCEIRA – DO LOCAL DO EVENTO
+
+O evento será realizado {{local}}.
+
+CLÁUSULA QUARTA – DOS DEVERES DO CONTRATANTE
+
+A Contratante obriga-se a fornecer à Contratada, com antecedência razoável, todas as informações necessárias à perfeita realização do serviço, incluindo detalhes logísticos, de acesso e demais especificações do evento.
+
+CLÁUSULA QUINTA – DAS OBRIGAÇÕES DA CONTRATADA
+
+A Contratada prestará os serviços em estrita conformidade com as especificações fornecidas pela Contratante, observando as normas sanitárias e de higiene vigentes.
+
+A Contratada será responsável pela entrega de {{quantidade}} mini burgers (pão, carne e queijo), todos acondicionados em embalagem térmica personalizada {{entrega_obrigacao}}.
+
+A Contratada manterá sua equipe padronizada e identificada durante toda a execução dos serviços.
+
+CLÁUSULA SEXTA – DO VALOR
+
+Pela execução dos serviços ora contratados, a Contratante pagará à Contratada o valor total de {{total}} ({{total_extenso}}).
+
+CLÁUSULA SÉTIMA – DA FORMA DE PAGAMENTO
+
+A Contratante realizou o pagamento de {{entrada}} ({{entrada_extenso}}) em {{data_entrada}}, via transferência PIX, a título de sinal e princípio de pagamento. O saldo remanescente deverá ser quitado em até 10 (dez) dias antes da data do evento.
+
+CLÁUSULA OITAVA – DO PRAZO DE VIGÊNCIA
+
+O presente contrato vigorará da data de sua assinatura até {{termino}}, data prevista para a conclusão da entrega, quando se extinguirão automaticamente os direitos e obrigações dele decorrentes.
+
+CLÁUSULA NONA – DA RESCISÃO
+
+O presente contrato poderá ser resilido por mútuo acordo ou por iniciativa unilateral de qualquer das partes, mediante notificação prévia por escrito com antecedência mínima de 30 (trinta) dias. Em caso de rescisão pela Contratante, a Contratada terá o direito de reter 30% (trinta por cento) dos valores já recebidos, a título de cláusula penal compensatória.
+
+CLÁUSULA DÉCIMA – DAS DISPOSIÇÕES GERAIS
+
+Após a entrega dos {{quantidade}} mini burgers, a Contratante assumirá integral responsabilidade pela conservação e armazenamento dos produtos não consumidos, eximindo a Contratada de qualquer responsabilidade sobre os mesmos.
+
+CLÁUSULA DÉCIMA PRIMEIRA – DO FORO
+
+Fica eleito o Foro da Comarca de Belém, Estado do Pará, para dirimir quaisquer dúvidas ou controvérsias oriundas do presente instrumento, renunciando as partes a qualquer outro, por mais privilegiado que seja.
+
+E, por estarem assim justas e contratadas, as partes firmam o presente instrumento em 2 (duas) vias de igual teor e forma, na presença das testemunhas abaixo subscritas.
+
+Belém/PA, {{emissao}}.
+
+CONTRATANTE
+
+{{nome}}
+
+{{tipo_doc}}: {{cpf}}
+
+CONTRATADA
+
+Shake Burger Hamburgueria Ltda
+
+CNPJ: 38089344/0001-91
+
+TESTEMUNHA 1
+
+TESTEMUNHA 2
