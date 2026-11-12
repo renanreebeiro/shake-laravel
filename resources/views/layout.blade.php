@@ -15,10 +15,11 @@
         </a>
         @auth
             <nav aria-label="Navegação">
-                <a href="{{ url('/') }}" @if(!request()->routeIs('templates.*', 'events.*')) aria-current="page" @endif>Documentos</a>
+                <a href="{{ url('/') }}" @if(!request()->routeIs('templates.*', 'events.*', 'users.*')) aria-current="page" @endif>Documentos</a>
                 <a href="{{ route('events.index') }}" @if(request()->routeIs('events.*')) aria-current="page" @endif>Eventos</a>
                 @if(auth()->user()->is_admin)
                     <a href="{{ route('templates.index') }}" @if(request()->routeIs('templates.*')) aria-current="page" @endif>Modelos</a>
+                    <a href="{{ route('users.index') }}" @if(request()->routeIs('users.*')) aria-current="page" @endif>Usuários</a>
                 @endif
             </nav>
             <form action="{{ url('/sair') }}" method="post" class="logout">@csrf<button>Sair <span aria-hidden="true">↗</span></button></form>

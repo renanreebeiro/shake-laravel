@@ -1,5 +1,6 @@
 <?php
 use App\Http\Controllers\ShakeEventController;
+use App\Http\Controllers\TeamUserController;
 use App\Models\DocumentTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -41,6 +42,9 @@ Route::middleware('auth')->group(function () {
         return response()->view('issue', ['template' => $template, 'fields' => array_unique($matches[1])])
             ->header('Cache-Control', 'private, no-store');
     })->name('documents.show');
+
+    Route::get('/usuarios', [TeamUserController::class, 'index'])->name('users.index');
+    Route::post('/usuarios', [TeamUserController::class, 'store'])->name('users.store');
 
     Route::get('/modelos', function (Request $request) {
         abort_unless($request->user()->is_admin, 403);
