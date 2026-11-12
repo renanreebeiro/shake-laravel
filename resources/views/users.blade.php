@@ -32,7 +32,16 @@
                 <li><strong>{{ $user->name }}</strong> · {{ $user->is_admin ? 'Administração' : 'Equipe' }}<br>{{ $user->email }}</li>
             @endforeach
         </ul>
-        {{ $users->links('pagination::simple-default') }}
+        @if($users->hasPages())
+            <div aria-label="Páginas de usuários">
+                @if($users->previousPageUrl())
+                    <a href="{{ $users->previousPageUrl() }}" rel="prev">Anterior</a>
+                @endif
+                @if($users->nextPageUrl())
+                    <a href="{{ $users->nextPageUrl() }}" rel="next">Próxima</a>
+                @endif
+            </div>
+        @endif
     </section>
 </div>
 @endsection
