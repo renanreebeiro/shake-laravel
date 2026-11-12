@@ -1,4 +1,5 @@
 <?php
+use App\Http\Controllers\ShakeEventController;
 use App\Models\DocumentTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +28,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/', function () {
         return view('catalog', ['templates' => DocumentTemplate::where('active', true)->orderBy('title')->get()]);
     });
+
+    Route::resource('eventos', ShakeEventController::class)
+        ->parameters(['eventos' => 'event'])
+        ->names('events')
+        ->except('destroy');
+    Route::patch('/eventos/{event}/status', [ShakeEventController::class, 'status'])->name('events.status');
 
     Route::get('/documentos/{template:slug}', function (DocumentTemplate $template) {
         abort_unless($template->active, 404);
