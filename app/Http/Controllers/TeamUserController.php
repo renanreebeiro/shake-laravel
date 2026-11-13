@@ -23,7 +23,7 @@ class TeamUserController
 
         $request->merge(['email' => strtolower(trim($request->string('email')->value()))]);
         $data = $request->validate([
-            'role' => ['required', Rule::in(array_keys(User::ROLES))],
+            'role' => ['required', Rule::in(array_keys(User::teamRoles()))],
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:254|unique:users,email',
             'password' => [
@@ -50,9 +50,9 @@ class TeamUserController
     public function updateAccess(Request $request, User $user)
     {
         abort_unless($request->user()->is_admin, 403);
-        abort_if($request->user()->is($user), 403);
+        abort_if($request->user()->is($user) || $user->role() === 'programmer', 403);
 
-        $data = $request->validate(['role' => ['required', Rule::in(array_keys(User::ROLES))]]);
+        $data = $request->validate(['role' => ['required', Rule::in(array_keys(User::teamRoles()))]]);
         $user->assignRole($data['role']);
         $user->saveOrFail();
 

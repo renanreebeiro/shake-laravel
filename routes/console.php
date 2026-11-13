@@ -3,7 +3,12 @@ use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Validator;
 
-Artisan::command('shake:usuario {email} {--admin}', function () {
+Artisan::command('shake:usuario {email} {--admin} {--programador}', function () {
+    if ($this->option('admin') && $this->option('programador')) {
+        $this->error('Escolha apenas um perfil.');
+
+        return 1;
+    }
     $email = strtolower(trim($this->argument('email')));
     $password = $this->secret('Senha da conta');
     $validation = Validator::make(compact('email', 'password'), [
@@ -14,10 +19,12 @@ Artisan::command('shake:usuario {email} {--admin}', function () {
         $this->error($validation->errors()->first());
         return 1;
     }
-    User::create(['name' => $email, 'email' => $email, 'password' => $password, 'is_admin' => $this->option('admin')]);
+    $user = new User(['name' => $email, 'email' => $email, 'password' => $password]);
+    $user->assignRole($this->option('programador') ? 'programmer' : ($this->option('admin') ? 'admin' : 'member'));
+    $user->saveOrFail();
     $this->info('Conta criada.');
     return 0;
-})->purpose('Criar uma conta de equipe ou administração');
+})->purpose('Criar uma conta de equipe, administração ou programação');
 
 Artisan::command('shake:calendar-sync', function () {
     $calendar = app(\App\Services\ShakeGoogleCalendar::class);

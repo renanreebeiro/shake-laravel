@@ -27,7 +27,7 @@
             <input id="password_confirmation" type="password" name="password_confirmation" minlength="12" maxlength="72" autocomplete="new-password" required>
             <label for="role">Perfil</label>
             <select id="role" name="role" required>
-                @foreach(\App\Models\User::ROLES as $role => $label)
+                @foreach(\App\Models\User::teamRoles() as $role => $label)
                     <option value="{{ $role }}" @selected(old('role', 'member') === $role)>{{ $label }}</option>
                 @endforeach
             </select>
@@ -40,13 +40,13 @@
             @foreach($users as $user)
                 <li>
                     <strong>{{ $user->name }}</strong> · {{ \App\Models\User::ROLES[$user->role()] }}<br>{{ $user->email }}
-                    @unless(auth()->user()->is($user))
+                    @unless(auth()->user()->is($user) || $user->role() === 'programmer')
                         <form method="post" action="{{ route('users.access', $user) }}">
                             @csrf
                             @method('PATCH')
                             <label for="role-{{ $user->id }}">Perfil de {{ $user->name }}</label>
                             <select id="role-{{ $user->id }}" name="role" required>
-                                @foreach(\App\Models\User::ROLES as $role => $label)
+                                @foreach(\App\Models\User::teamRoles() as $role => $label)
                                     <option value="{{ $role }}" @selected($user->role() === $role)>{{ $label }}</option>
                                 @endforeach
                             </select>

@@ -25,13 +25,10 @@ class ShakeEventController
             $month = CarbonImmutable::parse($requested.'-01', 'America/Belem')->locale('pt_BR');
         }
 
-        $todayEvents = ShakeEvent::whereDate('event_date', '<=', $today->toDateString())
-            ->where(fn ($query) => $query->whereDate('event_date', $today->toDateString())->orWhereDate('ends_on', '>=', $today->toDateString()))
-            ->where('status', '!=', 'cancelled')->orderBy('starts_at')->get();
         $events = ShakeEvent::orderBy('event_date')->orderBy('starts_at')->orderBy('id');
 
         if ($view === 'kanban') {
-            return view('events.index', ['view' => $view, 'todayEvents' => $todayEvents, 'columns' => $events->withSum('payments as received_total', 'amount')->with(['coverage', 'coverageDeliveries'])->get()->groupBy('status')]);
+            return view('events.index', ['view' => $view, 'columns' => $events->withSum('payments as received_total', 'amount')->with(['coverage', 'coverageDeliveries'])->get()->groupBy('status')]);
         }
 
         $first = $month->startOfWeek(\Carbon\CarbonInterface::SUNDAY);
@@ -44,7 +41,7 @@ class ShakeEventController
         $monthEvents = $events->whereBetween('event_date', [$month->toDateString(), $month->endOfMonth()->toDateString()])->get();
         $byDate = $monthEvents->groupBy(fn (ShakeEvent $event) => $event->event_date->toDateString());
 
-        return view('events.index', compact('view', 'today', 'month', 'days', 'monthEvents', 'byDate', 'todayEvents'));
+        return view('events.index', compact('view', 'today', 'month', 'days', 'monthEvents', 'byDate'));
     }
 
     public function create(Request $request)
