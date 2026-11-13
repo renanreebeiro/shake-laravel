@@ -20,13 +20,18 @@
         }
         .events-banner-content {
             display: grid;
+            grid-template-columns: minmax(0, 42fr) minmax(max-content, 20fr) minmax(0, 38fr);
+            align-items: center;
             gap: .9rem;
-            width: 60%;
+            width: 100%;
         }
-        .events-banner-content .hero-link { justify-self: center; }
+        .events-banner-content .hero-link { justify-self: center; white-space: nowrap; }
+        @media (max-width: 850px) {
+            .events-banner-content { grid-template-columns: minmax(0, 1fr); width: min(60%, 24rem); }
+            .events-banner-content .hero-link { justify-self: start; white-space: normal; }
+        }
         @media (max-width: 600px) {
-            .events-banner-content { width: min(100%, 18rem); }
-            .events-banner-content .hero-link { justify-self: start; }
+            .events-banner-content { width: min(75%, 18rem); }
             .events-hero.events-dashboard-banner {
                 background-image: linear-gradient(90deg, #18100cf5, #18100c80), var(--banner-image);
             }
