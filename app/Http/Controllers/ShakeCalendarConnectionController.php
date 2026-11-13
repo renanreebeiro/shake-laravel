@@ -31,13 +31,12 @@ class ShakeCalendarConnectionController
 
         $code = $request->query->getString('code');
         try {
-            $connected = $code !== '' && $calendar->authorize($code);
+            $message = $code !== '' ? $calendar->authorize($code)
+                : 'O Google não concluiu a autorização. Tente conectar novamente e confirme as permissões.';
         } catch (ConnectionException) {
-            $connected = false;
+            $message = 'A Hostinger não conseguiu alcançar o Google. Tente conectar novamente.';
         }
 
-        return redirect()->route('events.index')->with('message', $connected
-            ? 'Google Agenda autorizado para a Shake Burger.'
-            : 'A conexão não foi concluída. Confira se usou a conta da integração e se ela pode editar a agenda EVENTOS SHAKE.');
+        return redirect()->route('events.index')->with('message', $message);
     }
 }

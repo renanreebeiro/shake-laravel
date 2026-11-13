@@ -75,35 +75,66 @@ class ShakeGoogleCalendar
         ]);
     }
 
-    public function authorize(string $code): bool
+    public function authorize(string $code): string
     {
         $response = $this->tokenRequest([
             'grant_type' => 'authorization_code',
             'redirect_uri' => rtrim(config('app.url'), '/').route('calendar.callback', absolute: false),
             'code' => $code,
         ]);
-        if (!$response->successful() || !is_string($response->json('refresh_token'))
-            || !is_string($response->json('access_token'))
-            || !in_array('https://www.googleapis.com/auth/calendar.events', explode(' ', (string) $response->json('scope')), true)) {
-            return false;
+        if (!$response->successful()) {
+            return match ($response->json('error')) {
+                'invalid_client' => 'O Google recusou o ID ou o segredo do cliente OAuth. Confira se os dois são do mesmo cliente na Hostinger.',
+                'invalid_grant' => 'A autorização do Google expirou ou já foi usada. Clique em Conectar Google Agenda para tentar novamente.',
+                default => 'O Google recusou a troca de autorização (HTTP '.$response->status().').',
+            };
+        }
+        if (!is_string($response->json('refresh_token')) || !is_string($response->json('access_token'))) {
+            return 'O Google não concedeu acesso para sincronização automática. Reconecte a agenda e confirme as permissões.';
+        }
+        if (!in_array('https://www.googleapis.com/auth/calendar.events', explode(' ', (string) $response->json('scope')), true)) {
+            return 'Na autorização do Google, marque a permissão para acessar e editar os eventos da agenda.';
         }
 
         $google = Http::acceptJson()->withToken($response->json('access_token'))->connectTimeout(5)->timeout(15);
         $identity = $google->get('https://openidconnect.googleapis.com/v1/userinfo');
-        if (!$identity->successful() || $identity->json('email_verified') !== true
+        if (!$identity->successful()) {
+            return 'O Google não confirmou a identidade da conta (HTTP '.$identity->status().').';
+        }
+        if ($identity->json('email_verified') !== true
             || strcasecmp((string) $identity->json('email'), (string) config('shake-calendar.email')) !== 0) {
-            return false;
+            return 'Selecione a conta Google configurada para a integração da Shake Burger.';
         }
 
-        $events = $google->get('https://www.googleapis.com/calendar/v3/calendars/'.rawurlencode($this->calendarId()).'/events', [
+        try {
+            $calendarId = $this->calendarId();
+        } catch (RuntimeException $e) {
+            return $e->getMessage();
+        }
+
+        $events = $google->get('https://www.googleapis.com/calendar/v3/calendars/'.rawurlencode($calendarId).'/events', [
             'maxResults' => 1,
             'fields' => 'accessRole',
         ]);
-        if (!$events->successful() || !in_array($events->json('accessRole'), ['writer', 'owner', 'writerWithoutPrivateAccess'], true)) {
-            return false;
+        if ($events->status() === 403 && (
+            in_array('SERVICE_DISABLED', array_column($events->json('error.details', []), 'reason'), true)
+            || in_array('accessNotConfigured', array_column($events->json('error.errors', []), 'reason'), true)
+        )) {
+            return 'A Google Calendar API está desativada. Ative-a no mesmo projeto do cliente OAuth.';
+        }
+        if ($events->status() === 404) {
+            return 'O Google não encontrou a agenda. Confira o ID da EVENTOS SHAKE e se ela aparece na conta escolhida.';
+        }
+        if (!$events->successful()) {
+            return 'O Google recusou a consulta à agenda (HTTP '.$events->status().'). Confira a permissão de edição.';
+        }
+        if (!in_array($events->json('accessRole'), ['writer', 'owner', 'writerWithoutPrivateAccess'], true)) {
+            return 'A conta Google precisa de permissão para editar a agenda EVENTOS SHAKE.';
         }
 
-        return Storage::disk('local')->put(self::TOKEN_FILE, Crypt::encryptString($response->json('refresh_token')));
+        return Storage::disk('local')->put(self::TOKEN_FILE, Crypt::encryptString($response->json('refresh_token')))
+            ? 'Google Agenda autorizado para a Shake Burger.'
+            : 'A Hostinger não conseguiu salvar a autorização no armazenamento privado.';
     }
 
     private function tokenRequest(array $data): \Illuminate\Http\Client\Response
