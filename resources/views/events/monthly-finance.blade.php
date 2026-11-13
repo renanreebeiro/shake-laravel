@@ -23,7 +23,7 @@
                 </form>
             </section>
             <section class="finance-panel">
-                <h2>Eventos do mês</h2>
+                <h2 id="finance-agenda-title">Eventos do mês</h2>
                 <form method="get" action="{{ route('events.finance') }}">
                     <input type="hidden" name="month" value="{{ $month }}">
                     <label for="event-month">Mês dos eventos</label>
@@ -32,21 +32,23 @@
                         <button type="submit">Consultar</button>
                     </div>
                 </form>
-                <ul class="finance-agenda">
-                    @forelse ($agenda as $event)
-                        <li>
-                            @if ($event->status === 'completed')
-                                <span class="finance-paid" role="img" aria-label="Realizado">✓</span>
-                            @endif
-                            <a href="{{ route('events.show', $event) }}">{{ $event->title }}</a>
-                            @if ($event->status !== 'completed')
-                                <small>{{ $event->event_date->format('d/m') }} · {{ $event->startLabel() }} · {{ $event->address ?: 'Local a definir' }}</small>
-                            @endif
-                        </li>
-                    @empty
-                        <li>Nenhum evento no mês.</li>
-                    @endforelse
-                </ul>
+                <div @if ($agenda->count() > 5) class="finance-agenda-scroll" tabindex="0" role="region" aria-labelledby="finance-agenda-title" @endif>
+                    <ul class="finance-agenda">
+                        @forelse ($agenda as $event)
+                            <li>
+                                @if ($event->status === 'completed')
+                                    <span class="finance-paid" role="img" aria-label="Realizado">✓</span>
+                                @endif
+                                <a href="{{ route('events.show', $event) }}">{{ $event->title }}</a>
+                                @if ($event->status !== 'completed')
+                                    <small>{{ $event->event_date->format('d/m') }} · {{ $event->startLabel() }} · {{ $event->address ?: 'Local a definir' }}</small>
+                                @endif
+                            </li>
+                        @empty
+                            <li>Nenhum evento no mês.</li>
+                        @endforelse
+                    </ul>
+                </div>
             </section>
         </div>
         <section class="finance-panel finance-trend">
@@ -104,7 +106,7 @@
             @else
                 <div class="finance-table-wrap" tabindex="0" role="region" aria-label="Tabela de recebimentos e pendências">
                     <table>
-                        <thead><tr><th scope="col">Evento</th><th scope="col">Data</th><th scope="col">Valor total</th><th scope="col">Recebido no mês</th><th scope="col">Já pago</th><th scope="col">Falta pagar</th></tr></thead>
+                        <thead><tr><th scope="col">Evento</th><th scope="col">Data</th><th scope="col">Valor total</th><th scope="col">Já recebido</th><th scope="col">Falta receber</th></tr></thead>
                         <tbody>
                             @foreach ($ledger as $event)
                                 @php($entries = $paymentsByEvent->get($event->id, collect()))
@@ -128,7 +130,6 @@
                                     </th>
                                     <td>{{ $event->event_date->format('d/m/Y') }}</td>
                                     <td>{{ $event->document_total === null ? 'A definir' : EventMoney::format($event->document_total) }}</td>
-                                    <td class="finance-paid">{{ EventMoney::format($entries->sum('amount')) }}</td>
                                     <td class="finance-paid">{{ EventMoney::format((int) $event->payments_sum_amount) }}</td>
                                     <td class="finance-pending">{{ $event->document_total === null ? 'A definir' : EventMoney::format(max(0, $event->document_total - $event->payments_sum_amount)) }}</td>
                                 </tr>

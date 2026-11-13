@@ -37,6 +37,17 @@
 .finance-panel { background: var(--finance-panel); box-shadow: inset 0 1px #ff9c5133; }
 .finance-panel a { color: #ffd1ae; }
 .finance-agenda { list-style: none; padding: 0; margin: .75rem 0 0; }
+.finance-agenda-scroll {
+    max-block-size: 18rem;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    scrollbar-color: #ffac62 #2a1810;
+    margin-top: .75rem;
+    padding-inline-end: .4rem;
+}
+.finance-agenda-scroll:focus-visible { outline: 2px solid #ffac62; outline-offset: 3px; }
+.finance-agenda-scroll .finance-agenda { margin-top: 0; }
+.finance-agenda-scroll li { min-block-size: 3.6rem; }
 .finance-agenda li { padding: .5rem 0; border-top: 1px solid #ffffff24; }
 .finance-agenda small { display: block; }
 .finance-trend { background: radial-gradient(ellipse at 83% 86%, #ff6d0029, transparent 65%), var(--finance-panel); }

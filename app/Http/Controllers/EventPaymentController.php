@@ -57,7 +57,9 @@ class EventPaymentController
         $events = ShakeEvent::whereBetween('event_date', $dates)->where('status', '!=', 'cancelled')
             ->withSum('payments', 'amount')->orderBy('event_date')->get();
         $agenda = ShakeEvent::whereBetween('event_date', [$agendaStart->toDateString(), $agendaStart->endOfMonth()->toDateString()])
-            ->where('status', '!=', 'cancelled')->orderBy('event_date')->orderBy('starts_at')->get();
+            ->where('status', '!=', 'cancelled')
+            ->orderByRaw('CASE WHEN status = ? THEN 1 ELSE 0 END', ['completed'])
+            ->orderBy('event_date')->orderBy('starts_at')->orderBy('id')->get();
         $payments = EventPayment::with(['event' => fn ($query) => $query->withSum('payments', 'amount')])
             ->whereBetween('received_on', $dates)->latest('received_on')->get();
         $paymentsByEvent = $payments->groupBy('shake_event_id');
