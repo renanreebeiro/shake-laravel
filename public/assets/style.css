@@ -144,10 +144,10 @@ section { min-width: 0; padding: clamp(1rem, 2.4vw, 1.65rem); border: 1px solid 
 .document-card:nth-child(even) { background: linear-gradient(145deg, #35130e, #1c100b 66%, #55220e); border-color: #4d291c; color: #fff2e4; }
 .document-card:hover { border-color: #c45524; box-shadow: 0 .5rem 1.25rem #50220017; }
 .document-card:focus-visible { outline-offset: 3px; }
-.card-top, .card-action { display: flex; align-items: center; justify-content: space-between; gap: .65rem; }
-.card-top { color: var(--rust); font-size: 1rem; }
-.document-card:nth-child(even) .card-top { color: #ffb37c; }
-.card-format { padding: .2rem .48rem; border: 1px solid currentColor; border-radius: 999px; font-size: .65rem; letter-spacing: .12em; }
+.card-action { display: flex; align-items: center; justify-content: space-between; gap: .65rem; }
+.document-heading { display: flex; align-items: center; gap: .55em; }
+.document-icon { width: 1em; height: 1em; flex: 0 0 1em; color: var(--rust); }
+.document-card:nth-child(even) .document-icon { color: #ffb37c; }
 .document-card h3 { margin: 1.2rem 0; font-size: clamp(1.4rem, 2.3vw, 2.05rem); }
 .card-action { margin-top: auto; font-size: .85rem; }
 .card-action span { display: grid; place-items: center; width: 2rem; height: 2rem; flex: 0 0 2rem; border-radius: 50%; background: var(--orange); color: #26140b; }
@@ -169,6 +169,30 @@ input:not([type=checkbox]), select, textarea {
     font: inherit;
 }
 input[type=checkbox] { accent-color: var(--rust); }
+.currency-input { position: relative; }
+.currency-input span { position: absolute; inset-inline-start: .75rem; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.currency-input input { padding-inline-start: 2.65rem; }
+.team-accounts { list-style: none; padding: 0; overflow-wrap: anywhere; }
+.team-accounts > li { border-block-start: 1px solid var(--border); padding-block: 1rem; }
+.area-access { border: 0; margin: .75rem 0 0; padding: 0; }
+.area-access label { display: flex; align-items: center; gap: .55rem; }
+.area-access input[role=switch] {
+    appearance: none;
+    width: 2.25rem;
+    height: 1.25rem;
+    border: 1px solid #756458;
+    border-radius: 2rem;
+    background: radial-gradient(circle .39rem at .57rem center, #fff 95%, transparent) #756458;
+    cursor: pointer;
+}
+.area-access input[role=switch]:checked {
+    border-color: var(--rust);
+    background: radial-gradient(circle .39rem at calc(100% - .57rem) center, #fff 95%, transparent) var(--rust);
+}
+.area-access input[role=switch]:focus-visible { outline: 2px solid var(--rust); outline-offset: 3px; }
+@media (forced-colors: active) {
+    .area-access input[role=switch] { appearance: auto; }
+}
 textarea { min-height: 8rem; resize: vertical; }
 button, #download { margin-top: 1rem; }
 button:disabled { opacity: .65; cursor: wait; }

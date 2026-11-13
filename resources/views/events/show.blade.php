@@ -15,7 +15,13 @@
             <div><dt>Data e horário</dt><dd>{{ $event->event_date->format('d/m/Y') }} · {{ $event->schedule() }}</dd></div>
             <div>
                 <dt>Endereço</dt>
-                <dd><a href="https://www.google.com/maps/search/?api=1&amp;query={{ rawurlencode($event->address) }}" target="_blank" rel="noopener noreferrer">{{ $event->address }} ↗</a></dd>
+                <dd>
+                    @if($event->address !== '')
+                        <a href="https://www.google.com/maps/search/?api=1&amp;query={{ rawurlencode($event->address) }}" target="_blank" rel="noopener noreferrer">{{ $event->address }} ↗</a>
+                    @else
+                        A definir
+                    @endif
+                </dd>
             </div>
             <div><dt>Quantidade</dt><dd>{{ $event->quantity !== null ? number_format($event->quantity, 0, ',', '.').' '.$event->quantity_unit : 'A definir' }}</dd></div>
             <div><dt>Mr. Shake Burger</dt><dd><span class="events-mascot mascot-{{ $event->mascot }}">{{ \App\Models\ShakeEvent::MASCOT[$event->mascot] }}</span></dd></div>

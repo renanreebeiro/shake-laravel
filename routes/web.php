@@ -1,6 +1,8 @@
 <?php
 use App\Http\Controllers\ShakeEventController;
+use App\Http\Controllers\ShakeCalendarConnectionController;
 use App\Http\Controllers\TeamUserController;
+use App\Http\Middleware\RequireAreaAccess;
 use App\Models\DocumentTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -26,35 +28,48 @@ Route::middleware('auth')->group(function () {
         return redirect()->route('login');
     });
 
-    Route::get('/', function () {
+    Route::get('/', function (Request $request) {
+        if (!$request->user()->hasAreaAccess('documents')) {
+            if ($request->user()->hasAreaAccess('events')) {
+                return redirect()->route('events.index');
+            }
+            if ($request->user()->hasAreaAccess('templates')) {
+                return redirect()->route('templates.index');
+            }
+            return view('no-area');
+        }
         return view('catalog', ['templates' => DocumentTemplate::where('active', true)->orderBy('title')->get()]);
     });
 
-    Route::resource('eventos', ShakeEventController::class)
-        ->parameters(['eventos' => 'event'])
-        ->names('events')
-        ->except('destroy');
-    Route::patch('/eventos/{event}/status', [ShakeEventController::class, 'status'])->name('events.status');
+    Route::post('/integracoes/google-agenda', [ShakeCalendarConnectionController::class, 'start'])->name('calendar.connect');
+    Route::get('/integracoes/google-agenda/retorno', [ShakeCalendarConnectionController::class, 'callback'])->name('calendar.callback');
+
+    Route::middleware(RequireAreaAccess::class.':events')->group(function () {
+        Route::resource('eventos', ShakeEventController::class)
+            ->parameters(['eventos' => 'event'])
+            ->names('events')
+            ->except('destroy');
+        Route::patch('/eventos/{event}/status', [ShakeEventController::class, 'status'])->name('events.status');
+    });
 
     Route::get('/documentos/{template:slug}', function (DocumentTemplate $template) {
         abort_unless($template->active, 404);
         preg_match_all('/\{\{\s*([a-z][a-z0-9_]*)\s*\}\}/', $template->body, $matches);
         return response()->view('issue', ['template' => $template, 'fields' => array_unique($matches[1])])
             ->header('Cache-Control', 'private, no-store');
-    })->name('documents.show');
+    })->middleware(RequireAreaAccess::class.':documents')->name('documents.show');
 
     Route::get('/usuarios', [TeamUserController::class, 'index'])->name('users.index');
     Route::post('/usuarios', [TeamUserController::class, 'store'])->name('users.store');
+    Route::patch('/usuarios/{user}/acessos', [TeamUserController::class, 'updateAccess'])->name('users.access');
 
     Route::get('/modelos', function (Request $request) {
-        abort_unless($request->user()->is_admin, 403);
         $templates = DocumentTemplate::orderBy('title')->get();
         $selected = $request->filled('editar') ? $templates->firstWhere('id', $request->integer('editar')) : null;
         return view('templates', compact('templates', 'selected'));
-    })->name('templates.index');
+    })->middleware(RequireAreaAccess::class.':templates')->name('templates.index');
 
     Route::post('/modelos/{template?}', function (Request $request, ?DocumentTemplate $template = null) {
-        abort_unless($request->user()->is_admin, 403);
         $data = $request->validate(['title' => 'required|string|max:120', 'body' => 'required|string|max:20000']);
         $data['active'] = $request->boolean('active');
         if ($template?->exists) {
@@ -64,5 +79,5 @@ Route::middleware('auth')->group(function () {
             DocumentTemplate::create($data);
         }
         return redirect()->route('templates.index')->with('message', 'Modelo salvo.');
-    })->name('templates.save');
+    })->middleware(RequireAreaAccess::class.':templates')->name('templates.save');
 });

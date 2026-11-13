@@ -29,11 +29,7 @@
     <div class="document-grid">
         @forelse($templates as $template)
             <a class="document-card" href="{{ route('documents.show', ['template' => $template->slug]) }}">
-                <div class="card-top">
-                    <span>{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
-                    <span class="card-format">PDF</span>
-                </div>
-                <h3>{{ $template->title }}</h3>
+                <h3 class="document-heading">@include('document-icon', ['slug' => $template->slug]) {{ $template->title }}</h3>
                 <span class="card-action">Preencher documento <span aria-hidden="true">↗</span></span>
             </a>
         @empty

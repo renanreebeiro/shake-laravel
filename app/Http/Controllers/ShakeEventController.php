@@ -74,23 +74,37 @@ class ShakeEventController
 
     private function validated(Request $request): array
     {
-        return $request->validate([
+        $request->merge(['all_day' => $request->boolean('all_day')]);
+        $validated = $request->validate([
             'title' => 'required|string|max:120',
             'event_date' => 'required|date_format:Y-m-d',
-            'starts_at' => 'required|date_format:H:i',
-            'ends_at' => 'nullable|date_format:H:i|different:starts_at',
+            'all_day' => 'boolean',
+            'starts_at' => 'exclude_if:all_day,true|required|date_format:H:i',
+            'ends_at' => ['exclude_if:all_day,true', 'required', 'date_format:H:i', Rule::when(
+                !$request->filled('ends_on') || $request->input('event_date') === $request->input('ends_on'),
+                ['different:starts_at']
+            )],
+            'ends_on' => 'nullable|date_format:Y-m-d|after_or_equal:event_date',
             'address' => 'required|string|max:250',
-            'quantity' => 'nullable|required_with:quantity_unit|integer|min:1|max:1000000',
-            'quantity_unit' => 'nullable|required_with:quantity|string|max:40',
+            'quantity' => 'required|integer|min:1|max:1000000',
+            'quantity_unit' => 'required|string|max:40',
             'mascot' => ['required', Rule::in(array_keys(ShakeEvent::MASCOT))],
             'status' => ['required', Rule::in(array_keys(ShakeEvent::STATUSES))],
-            'responsible' => 'nullable|string|max:120',
-            'notes' => 'nullable|string|max:4000',
+            'responsible' => 'required|string|max:120',
+            'notes' => 'required|string|max:4000',
         ], [], [
             'title' => 'nome do evento', 'event_date' => 'data', 'starts_at' => 'horário de início',
             'ends_at' => 'horário de término', 'address' => 'endereço', 'quantity' => 'quantidade',
             'quantity_unit' => 'unidade', 'mascot' => 'presença do Mr. Shake Burger',
-            'responsible' => 'responsável', 'notes' => 'observações',
+            'responsible' => 'responsável', 'notes' => 'observações', 'ends_on' => 'data de término',
         ]);
+
+        if ($validated['all_day']) {
+            $validated['starts_at'] = '00:00';
+            $validated['ends_at'] = null;
+        }
+        $validated['ends_on'] ??= null;
+
+        return $validated;
     }
 }

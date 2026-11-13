@@ -3,6 +3,7 @@
 @section('content')
 <h1>Modelos</h1>
 <p>Use marcadores como <code>@{{ nome_do_cliente }}</code> no texto para criar campos no formulário.</p>
+<p>Para valores em reais, comece o nome do campo com <code>valor_</code>, como <code>@{{ valor_sinal }}</code>.</p>
 <div class="layout">
     <section>
         <h2>Catálogo</h2>

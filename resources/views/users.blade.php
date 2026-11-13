@@ -3,6 +3,9 @@
 @section('content')
 <h1>Usuários</h1>
 <p>Crie um acesso individual para cada pessoa da equipe.</p>
+@if($errors->has('areas') || $errors->has('areas.*'))
+    <p class="notice" role="alert">Selecione apenas as áreas disponíveis e salve novamente.</p>
+@endif
 <div class="layout">
     <section>
         <h2>Nova conta da equipe</h2>
@@ -27,9 +30,27 @@
     </section>
     <section>
         <h2>Contas cadastradas</h2>
-        <ul>
+        <ul class="team-accounts">
             @foreach($users as $user)
-                <li><strong>{{ $user->name }}</strong> · {{ $user->is_admin ? 'Administração' : 'Equipe' }}<br>{{ $user->email }}</li>
+                <li>
+                    <strong>{{ $user->name }}</strong> · {{ $user->is_admin ? 'Administração' : 'Equipe' }}<br>{{ $user->email }}
+                    @if(!$user->is_admin)
+                        <form method="post" action="{{ route('users.access', $user) }}">
+                            @csrf
+                            @method('PATCH')
+                            <fieldset class="area-access">
+                                <legend>Áreas liberadas para {{ $user->name }}</legend>
+                                @foreach(\App\Models\User::AREAS as $area => $label)
+                                    <label>
+                                        <input type="checkbox" role="switch" name="areas[]" value="{{ $area }}" @checked($user->hasAreaAccess($area))>
+                                        {{ $label }}
+                                    </label>
+                                @endforeach
+                            </fieldset>
+                            <button type="submit">Salvar acessos</button>
+                        </form>
+                    @endif
+                </li>
             @endforeach
         </ul>
         @if($users->hasPages())

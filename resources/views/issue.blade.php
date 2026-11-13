@@ -21,6 +21,10 @@
         'nome_resp' => 'Nome do responsável', 'cpf_resp' => 'CPF ou CNPJ do responsável',
     ];
     $dateFields = ['data_evento', 'data_entrada', 'emissao', 'termino'];
+    $moneyFields = array_values(array_filter($fields, fn ($field) =>
+        in_array($field, ['valor', 'total', 'entrada'], true)
+        || (str_starts_with($field, 'valor_') && !str_ends_with($field, '_extenso'))
+    ));
     $choices = [
         'tipo_doc' => ['CPF', 'CNPJ'],
         'forma_pag' => ['PIX', 'Transferência', 'Dinheiro', 'Cartão'],
@@ -34,7 +38,7 @@
         'entrega_obrigacao' => 'e acompanhados de personagem/animador temático devidamente uniformizado',
     ];
 @endphp
-<h1>{{ $template->title }}</h1>
+<h1 class="document-heading">@include('document-icon', ['slug' => $template->slug]) {{ $template->title }}</h1>
 <p>Preencha os dados e confira o PDF antes de baixar. O preenchimento fica no seu navegador.</p>
 @if($template->slug === 'contrato-evento')
     <p>Este modelo corresponde ao serviço com personagem.</p>
@@ -49,7 +53,8 @@
                     <input type="hidden" data-field="{{ $field }}" value="{{ $deliveryText[$field] }}">
                     @continue
                 @endif
-                <label for="field-{{ $field }}">{{ $labels[$field] ?? ucfirst(str_replace('_', ' ', $field)) }}</label>
+                @php($isMoney = in_array($field, $moneyFields, true))
+                <label for="field-{{ $field }}">{{ $labels[$field] ?? (ucfirst(str_replace('_', ' ', $field)) . ($isMoney ? ' (R$)' : '')) }}</label>
                 @if(isset($choices[$field]))
                     <select id="field-{{ $field }}" data-field="{{ $field }}" required>
                         <option value="">Selecione</option>
@@ -59,9 +64,12 @@
                     </select>
                 @elseif(in_array($field, $dateFields, true))
                     <input id="field-{{ $field }}" data-field="{{ $field }}" type="date" @if($isReceipt && $field === 'emissao') value="{{ now('America/Belem')->toDateString() }}" @endif min="1900-01-01" max="2200-12-31" required>
-                @elseif($field === 'valor')
-                    <input id="field-{{ $field }}" data-field="{{ $field }}" inputmode="decimal" placeholder="125,50" maxlength="16" pattern="[0-9]{1,9}(,[0-9]{1,2})?" required>
-                    <small>Use vírgula para os centavos e deixe os milhares sem ponto.</small>
+                @elseif($isMoney)
+                    <div class="currency-input">
+                        <span aria-hidden="true">R$</span>
+                        <input id="field-{{ $field }}" data-field="{{ $field }}" inputmode="decimal" placeholder="1.250,50" maxlength="14" pattern="(?:[0-9]{1,9}|[0-9]{1,3}(?:\.[0-9]{3}){1,2})(?:,[0-9]{1,2})?" aria-describedby="hint-{{ $field }}" required>
+                    </div>
+                    <small id="hint-{{ $field }}">Use vírgula para os centavos.</small>
                 @elseif($field === 'quantidade')
                     <input id="field-{{ $field }}" data-field="{{ $field }}" type="number" min="1" step="1" required>
                 @else
@@ -89,6 +97,8 @@
     const preview = document.getElementById('pdf-preview');
     const download = document.getElementById('download');
     const dateFields = @json($dateFields);
+    const moneyFields = @json($moneyFields);
+    const reais = new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'});
     let currentUrl, revision = 0;
 
     function clearPreview() {
@@ -100,7 +110,11 @@
         currentUrl = undefined;
     }
 
-    form.addEventListener('input', () => {
+    form.addEventListener('input', event => {
+        const field = event.target;
+        if (field.matches('input[required]')) {
+            field.setCustomValidity(field.value && !field.value.trim() ? 'Preencha este campo.' : '');
+        }
         clearPreview();
         message.textContent = 'Gere a prévia para conferir os dados atualizados.';
     });
@@ -112,15 +126,14 @@
         message.textContent = 'Preparando PDF…';
         try {
             const values = new Map(Array.from(form.querySelectorAll('[data-field]'), input => [input.dataset.field, input.value]));
-            const body = template.replace(/\{\{\s*([a-z][a-z0-9_]*)\s*\}\}/g, (_, key) => {
+            const body = template.replace(/(R\$[^\S\r\n]*)?\{\{\s*([a-z][a-z0-9_]*)\s*\}\}/g, (_, prefix = '', key) => {
                 const value = String(values.get(key) ?? '').trim();
-                if (dateFields.includes(key)) return value.split('-').reverse().join('/');
-                if (key === 'valor') {
-                    const amount = Number(value.replace(',', '.'));
-                    return amount.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+                if (moneyFields.includes(key)) {
+                    const amount = Number(value.replaceAll('.', '').replace(',', '.'));
+                    return reais.format(amount);
                 }
-                if (['total', 'entrada'].includes(key)) return 'R$ ' + value.replace(/^R\$\s*/, '');
-                return value;
+                if (dateFields.includes(key)) return prefix + value.split('-').reverse().join('/');
+                return prefix + value;
             });
             const response = await fetch(@json(asset('assets/timbrado.jpg')));
             if (!response.ok) throw new Error('Timbrado indisponível');

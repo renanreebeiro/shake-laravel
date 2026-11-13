@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class TeamUserController
@@ -41,5 +42,20 @@ class TeamUserController
         }
 
         return redirect()->route('users.index')->with('message', 'Conta da equipe criada.');
+    }
+
+    public function updateAccess(Request $request, User $user)
+    {
+        abort_unless($request->user()->is_admin && !$user->is_admin, 403);
+
+        $data = $request->validate([
+            'areas' => ['sometimes', 'array', 'list', 'max:'.count(User::AREAS)],
+            'areas.*' => ['required', 'string', 'distinct', Rule::in(array_keys(User::AREAS))],
+        ]);
+
+        $user->area_access = $data['areas'] ?? [];
+        $user->save();
+
+        return back()->with('message', 'Acessos de '.$user->name.' atualizados.');
     }
 }

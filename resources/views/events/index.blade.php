@@ -9,6 +9,13 @@
         <a class="hero-link" href="{{ route('events.create') }}">＋ Novo evento</a>
     </header>
 
+    @if(auth()->user()->is_admin && app(\App\Services\ShakeGoogleCalendar::class)->configured())
+        <form method="post" action="{{ route('calendar.connect') }}">
+            @csrf
+            <button type="submit">{{ app(\App\Services\ShakeGoogleCalendar::class)->connected() ? 'Reconectar Google Agenda' : 'Conectar Google Agenda' }}</button>
+        </form>
+    @endif
+
     <div class="events-toolbar">
         <nav class="events-switch" aria-label="Visualização dos eventos">
             <a href="{{ route('events.index') }}" @if($view === 'calendar') aria-current="page" @endif>Calendário</a>
@@ -39,7 +46,7 @@
                     </div>
                     @foreach($byDate->get($day->toDateString(), []) as $event)
                         <a class="events-chip status-{{ $event->status }}" href="{{ route('events.show', $event) }}">
-                            <span>{{ substr($event->starts_at, 0, 5) }}</span> {{ $event->title }}
+                            <span>{{ $event->startLabel() }}</span> {{ $event->title }}
                         </a>
                     @endforeach
                 </div>

@@ -41,3 +41,37 @@ Para publicar, use um servidor PHP com HTTPS e MySQL e configure a
 raiz do site para a pasta public/. Use APP_ENV=production,
 APP_DEBUG=false e SESSION_SECURE_COOKIE=true. O endereço localhost é
 apenas para teste no computador que executa a aplicação.
+
+### Google Agenda da Shake Burger
+
+1. No Google Cloud, habilite a Google Calendar API e crie um cliente OAuth
+   do tipo **Aplicativo da Web**. Cadastre o retorno
+   `https://documentos.shakeburger.com.br/integracoes/google-agenda/retorno`.
+2. Compartilhe somente a agenda EVENTOS SHAKE com uma conta Google dedicada
+   à integração, com permissão para editar eventos. Configure
+   `SHAKE_GOOGLE_ACCOUNT_EMAIL`, `SHAKE_GOOGLE_CALENDAR_ID`,
+   `SHAKE_GOOGLE_CLIENT_ID` e `SHAKE_GOOGLE_CLIENT_SECRET` no `.env` privado.
+3. Rode `php artisan migrate --force` e `php artisan config:clear`. Entre como
+   administrador em Eventos, clique em **Conectar Google Agenda** e autorize
+   usando a conta dedicada. O token é criptografado no armazenamento privado.
+4. Execute `php artisan shake:calendar-sync` para validar a conexão. Depois,
+   configure a hospedagem para executar `php artisan schedule:run` a cada minuto
+   na pasta do projeto. A sincronização roda a cada cinco minutos.
+   Com público externo em modo Teste, a autorização do Google Agenda expira
+   após sete dias. Para uso contínuo, configure a publicação no Google Cloud.
+
+A primeira execução traz eventos avulsos existentes no Google e envia os eventos
+ativos já cadastrados na Central. Depois disso, o vínculo é mantido pelo ID do
+evento. Se o mesmo compromisso já foi cadastrado separadamente nos dois lados,
+revise esses registros antes da primeira execução para evitar cópias.
+
+A integração espelha título, endereço, datas e horários, inclusive eventos de
+dia inteiro. Um evento antigo da Central sem horário de término recebe uma hora
+de duração no Google. Eventos recorrentes e tipos especiais do Google são
+ignorados. Campos internos, como observações, responsável, quantidade e status
+do Kanban, ficam na Central. Uma exclusão no Google marca o evento vinculado como
+cancelado na Central. Cancelar pelo Kanban não exclui um evento do Google.
+
+Se os mesmos dados forem alterados dos dois lados entre sincronizações, a rotina
+preserva as duas versões e conta um conflito no resultado. Para resolver, deixe
+título, local e horários iguais nos dois lados e rode a sincronização novamente.
