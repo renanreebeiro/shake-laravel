@@ -74,8 +74,11 @@ class SyncShakeCalendar
             if (!$local || $local->status === 'cancelled') {
                 return null;
             }
+            $previous = $local->status;
             $local->status = 'cancelled';
             $this->link($local, $remote, $calendarKey);
+
+            $this->recordActivity($local, 'calendar_cancelled', $remote, $previous);
 
             return 'cancelados';
         }
@@ -91,6 +94,8 @@ class SyncShakeCalendar
         if (!$local) {
             $local = new ShakeEvent($incoming + ['mascot' => 'pending', 'status' => 'planning']);
             $this->link($local, $remote, $calendarKey);
+
+            $this->recordActivity($local, 'imported', $remote);
 
             return 'importados';
         }
@@ -117,13 +122,14 @@ class SyncShakeCalendar
             if ($local->isDirty('address')) {
                 $local->maps_place_id = null;
                 $local->maps_url = null;
-                $local->maps_embed_url = null;
             }
             $renameCoverage = $local->isDirty(['title', 'event_date']);
             $this->link($local, $remote, $calendarKey);
             if ($renameCoverage) {
                 $local->coverage()->update(['pending' => true]);
             }
+
+            $this->recordActivity($local, 'calendar_edited', $remote);
 
             return 'atualizados';
         }
@@ -140,6 +146,16 @@ class SyncShakeCalendar
         }
 
         return null;
+    }
+
+    private function recordActivity(ShakeEvent $event, string $action, array $remote, ?string $previous = null): void
+    {
+        $event->activities()->create([
+            'action' => $action, 'source' => 'google',
+            'actor_email' => $action === 'imported' ? ($remote['creator']['email'] ?? null) : null,
+            'occurred_at' => isset($remote['updated']) ? CarbonImmutable::parse($remote['updated'])->utc() : now(),
+            'previous_status' => $previous, 'new_status' => $previous === null ? null : $event->status,
+        ]);
     }
 
     private function publish(PendingRequest $google, string $calendarKey, int $id): ?string

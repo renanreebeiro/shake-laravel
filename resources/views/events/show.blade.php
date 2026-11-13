@@ -28,10 +28,6 @@
                 <div><dt>Responsável</dt><dd>{{ $event->responsible }}</dd></div>
             @endif
         </dl>
-        @if($map = $event->mapsPreview())
-            <h2>Mapa do evento</h2>
-            <iframe src="{{ $map }}" title="Mapa do local do evento" loading="lazy" referrerpolicy="{{ $event->maps_place_id ? 'strict-origin-when-cross-origin' : 'no-referrer' }}" class="event-map" allowfullscreen></iframe>
-        @endif
         @if($event->notes)
             <h2>Observações para a equipe</h2>
             <p class="events-notes">{{ $event->notes }}</p>
@@ -42,5 +38,9 @@
         @method('DELETE')
         <button type="submit">Excluir evento</button>
     </form>
+    @if(auth()->user()->hasAreaAccess('finance'))
+        @include('events.finances')
+    @endif
     @include('events.coverage-details')
+    @include('events.activity')
 @endsection

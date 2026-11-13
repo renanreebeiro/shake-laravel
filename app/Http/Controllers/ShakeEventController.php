@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ShakeEvent;
+use App\Models\EventMoney;
 use App\Models\EventCoverage;
 use App\Services\SyncEventCoverage;
 use Illuminate\Support\Facades\Cache;
@@ -24,10 +25,13 @@ class ShakeEventController
             $month = CarbonImmutable::parse($requested.'-01', 'America/Belem')->locale('pt_BR');
         }
 
+        $todayEvents = ShakeEvent::whereDate('event_date', '<=', $today->toDateString())
+            ->where(fn ($query) => $query->whereDate('event_date', $today->toDateString())->orWhereDate('ends_on', '>=', $today->toDateString()))
+            ->where('status', '!=', 'cancelled')->orderBy('starts_at')->get();
         $events = ShakeEvent::orderBy('event_date')->orderBy('starts_at')->orderBy('id');
 
         if ($view === 'kanban') {
-            return view('events.index', ['view' => $view, 'columns' => $events->with(['coverage', 'coverageDeliveries'])->get()->groupBy('status')]);
+            return view('events.index', ['view' => $view, 'todayEvents' => $todayEvents, 'columns' => $events->withSum('payments as received_total', 'amount')->with(['coverage', 'coverageDeliveries'])->get()->groupBy('status')]);
         }
 
         $first = $month->startOfWeek(\Carbon\CarbonInterface::SUNDAY);
@@ -40,7 +44,7 @@ class ShakeEventController
         $monthEvents = $events->whereBetween('event_date', [$month->toDateString(), $month->endOfMonth()->toDateString()])->get();
         $byDate = $monthEvents->groupBy(fn (ShakeEvent $event) => $event->event_date->toDateString());
 
-        return view('events.index', compact('view', 'today', 'month', 'days', 'monthEvents', 'byDate'));
+        return view('events.index', compact('view', 'today', 'month', 'days', 'monthEvents', 'byDate', 'todayEvents'));
     }
 
     public function create(Request $request)
@@ -53,9 +57,13 @@ class ShakeEventController
     {
         $data = $this->validated($request);
         $coverage = $this->coverageData($request);
-        $event = DB::transaction(function () use ($data, $coverage) {
+        $event = DB::transaction(function () use ($data, $coverage, $request) {
+            if ($data['status'] === 'confirmed') {
+                throw ValidationException::withMessages(['status' => 'Salve em planejamento e registre o sinal antes de confirmar.']);
+            }
             $event = ShakeEvent::create($data);
             $this->saveCoverage($event, $coverage);
+            $this->record($request, $event, 'created');
 
             return $event;
         });
@@ -65,7 +73,12 @@ class ShakeEventController
 
     public function show(ShakeEvent $event)
     {
-        return view('events.show', ['event' => $event->load(['coverage', 'coverageDeliveries'])]);
+        return view('events.show', [
+            'documents' => $this->documentHistory($event),
+            'payments' => $this->paymentHistory($event),
+            'event' => $event->load(['coverage', 'coverageDeliveries']),
+            'activities' => $this->activities($event),
+        ]);
     }
 
     public function edit(ShakeEvent $event)
@@ -77,24 +90,41 @@ class ShakeEventController
     {
         $data = $this->validated($request);
         $coverage = $this->coverageData($request);
-        $this->changeEvent($event, function () use ($event, $data, $coverage) {
+        $this->changeEvent($event, function () use ($event, $data, $coverage, $request) {
             if (array_key_exists('maps_place_id', $data) && !$data['maps_place_id']
-                && $event->maps_place_id && $data['address'] !== $event->address) {
-                foreach (['maps_url', 'maps_embed_url'] as $field) {
-                    if (($data[$field] ?? null) === $event->$field) {
-                        $data[$field] = null;
-                    }
-                }
+                && $event->maps_place_id && $data['address'] !== $event->address
+                && ($data['maps_url'] ?? null) === $event->maps_url) {
+                $data['maps_url'] = null;
             }
-            $event->update($data);
-            $this->saveCoverage($event, $coverage);
+            $previous = $event->status;
+            if (array_key_exists('document_total', $data)
+                && ($data['document_total'] ?? 0) < $event->payments()->sum('amount')) {
+                throw ValidationException::withMessages(['document_total' => 'O valor total deve cobrir os recebimentos já registrados.']);
+            }
+            $event->fill($data);
+            $this->validateConfirmation($event, $previous);
+            $edited = (bool) array_diff(array_keys($event->getDirty()), ['status']);
+            $event->saveOrFail();
+            $coverageEdited = $this->saveCoverage($event, $coverage);
+            if ($edited || $coverageEdited) {
+                $this->record($request, $event, 'edited');
+            }
+            if ($previous !== $event->status) {
+                $this->record($request, $event, 'status', $previous);
+            }
         });
         return redirect()->route('events.show', $event)->with('message', 'Evento atualizado.');
     }
 
-    public function destroy(ShakeEvent $event)
+    public function destroy(Request $request, ShakeEvent $event)
     {
-        $deleted = Cache::lock('event-coverage:'.$event->id, 600)->get(fn () => $event->delete());
+        $deleted = Cache::lock('event-coverage:'.$event->id, 600)->get(fn () => DB::transaction(function () use ($request, $event) {
+            $current = ShakeEvent::lockForUpdate()->findOrFail($event->id);
+            $current->delete();
+            $this->record($request, $current, 'deleted');
+
+            return true;
+        }));
         if (!$deleted) {
             return back()->with('message', 'Aguarde o processamento da cobertura e tente excluir novamente.');
         }
@@ -106,7 +136,15 @@ class ShakeEventController
     public function status(Request $request, ShakeEvent $event)
     {
         $data = $request->validate(['status' => ['required', Rule::in(array_keys(ShakeEvent::STATUSES))]]);
-        $this->changeEvent($event, fn () => $event->update($data));
+        $this->changeEvent($event, function () use ($request, $event, $data) {
+            $previous = $event->status;
+            $event->fill($data);
+            $this->validateConfirmation($event, $previous);
+            $event->saveOrFail();
+            if ($previous !== $event->status) {
+                $this->record($request, $event, 'status', $previous);
+            }
+        });
         return redirect()->route('events.index', ['view' => 'kanban'])->with('message', 'Status atualizado.');
     }
 
@@ -117,6 +155,7 @@ class ShakeEventController
             if ($request->boolean('confirm_resend')) {
                 $event->coverageDeliveries()->whereIn('status', ['sending', 'uncertain'])->update(['status' => 'failed']);
             }
+            $this->record($request, $event, 'coverage_retry');
         });
 
         return back()->with('message', 'Nova tentativa de cobertura solicitada.');
@@ -126,6 +165,9 @@ class ShakeEventController
     {
         $changed = Cache::lock('event-coverage:'.$event->id, 600)->get(function () use ($event, $change) {
             DB::transaction(function () use ($event, $change) {
+                $current = ShakeEvent::lockForUpdate()->findOrFail($event->id);
+                $event->setRawAttributes($current->getAttributes(), true);
+                $event->unsetRelation('coverage');
                 $change();
                 $event->coverage()->update(['pending' => true]);
             });
@@ -145,11 +187,68 @@ class ShakeEventController
         }
     }
 
-    private function saveCoverage(ShakeEvent $event, ?array $data): void
+    public function deleted()
     {
-        if ($data !== null) {
-            $event->coverage()->updateOrCreate([], $data);
+        return view('events.deleted', ['events' => ShakeEvent::onlyTrashed()->latest('deleted_at')->paginate(30)]);
+    }
+
+    public function deletedHistory(int $eventId)
+    {
+        $event = ShakeEvent::onlyTrashed()->findOrFail($eventId);
+
+        return view('events.deleted-history', [
+            'event' => $event, 'activities' => $this->activities($event), 'documents' => $this->documentHistory($event), 'payments' => $this->paymentHistory($event),
+        ]);
+    }
+
+    private function paymentHistory(ShakeEvent $event)
+    {
+        return request()->user()->hasAreaAccess('finance')
+            ? $event->payments()->with('document:id,event_payment_id')->latest('received_on')->latest('id')->get()
+            : collect();
+    }
+
+    private function documentHistory(ShakeEvent $event)
+    {
+        return request()->user()->hasAreaAccess('finance')
+            ? $event->documents()->select(['id', 'shake_event_id', 'kind', 'title', 'receipt_number', 'received_amount', 'received_on', 'payment_method', 'generated_at'])->latest('generated_at')->latest('id')->get()
+            : collect();
+    }
+
+    private function validateConfirmation(ShakeEvent $event, string $previous): void
+    {
+        if ($event->status === 'confirmed' && ($previous !== 'confirmed' || $event->isDirty('document_total'))
+            && !$event->canConfirm()) {
+            throw ValidationException::withMessages(['status' => 'Registre um sinal de pelo menos 30% antes de confirmar o evento.']);
         }
+    }
+
+    private function activities(ShakeEvent $event)
+    {
+        return $event->activities()
+            ->when(!request()->user()->hasAreaAccess('finance'), fn ($query) =>
+                $query->whereNotIn('action', ['contract_issued', 'receipt_issued', 'payment_recorded']))
+            ->latest('occurred_at')->latest('id')->paginate(20);
+    }
+
+    private function record(Request $request, ShakeEvent $event, string $action, ?string $previous = null): void
+    {
+        $event->activities()->create([
+            'action' => $action, 'source' => 'central', 'actor_email' => $request->user()->email,
+            'actor_name' => $request->user()->name, 'occurred_at' => now(),
+            'previous_status' => $previous, 'new_status' => $previous === null ? null : $event->status,
+        ]);
+    }
+
+    private function saveCoverage(ShakeEvent $event, ?array $data): bool
+    {
+        if ($data === null) {
+            return false;
+        }
+
+        $coverage = $event->coverage()->updateOrCreate([], $data);
+
+        return $coverage->wasRecentlyCreated || $coverage->wasChanged(array_keys($data));
     }
 
     private function coverageData(Request $request): ?array
@@ -224,11 +323,6 @@ class ShakeEventController
     private function validated(Request $request): array
     {
         $request->merge(['all_day' => $request->boolean('all_day')]);
-        $embed = $request->input('maps_embed_url');
-        if (is_string($embed) && strlen($embed) <= 12000
-            && preg_match('~^<iframe\b[^>]*?\ssrc=(["\'])(.*?)\1[^>]*>\s*</iframe>\s*$~is', $embed, $match)) {
-            $request->merge(['maps_embed_url' => html_entity_decode($match[2], ENT_QUOTES | ENT_HTML5, 'UTF-8')]);
-        }
         $validated = $request->validate([
             'title' => 'required|string|max:120',
             'event_date' => 'required|date_format:Y-m-d',
@@ -256,11 +350,6 @@ class ShakeEventController
                 }
             }],
             'maps_place_id' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z0-9_-]+$/D'],
-            'maps_embed_url' => ['nullable', 'string', 'max:10000', function ($attribute, $value, $fail) {
-                if (!preg_match('~^https://www\.google\.com/maps/embed\?pb=[^\s<>"\']+$~D', $value)) {
-                    $fail('Cole o código gerado pelo Google Maps em Compartilhar → Incorporar um mapa.');
-                }
-            }],
             'quantity' => 'required|integer|min:1|max:1000000',
             'quantity_unit' => 'required|string|max:40',
             'mascot' => ['required', Rule::in(array_keys(ShakeEvent::MASCOT))],
@@ -279,6 +368,22 @@ class ShakeEventController
             $validated['ends_at'] = null;
         }
         $validated['ends_on'] ??= null;
+
+        if ($request->user()?->hasAreaAccess('finance')) {
+            $rules = [
+                'payment_due_on' => 'nullable|date_format:Y-m-d',
+                'document_total' => ['nullable', 'string', 'regex:/^'.EventMoney::PATTERN.'$/D'],
+                'document_data' => ['sometimes', 'array:'.implode(',', array_keys(ShakeEvent::DOCUMENT_FIELDS))],
+                'document_data.*' => 'nullable|string|max:250',
+            ];
+            $documents = $request->validate($rules, [
+                'document_total.regex' => 'Informe o valor total em reais, como 1.250,50.',
+            ]);
+            if (array_key_exists('document_total', $documents) && $documents['document_total'] !== null) {
+                $documents['document_total'] = EventMoney::cents($documents['document_total']);
+            }
+            $validated += $documents;
+        }
 
         return $validated;
     }

@@ -7,6 +7,13 @@
     @endif
     <span class="events-mascot mascot-{{ $event->mascot }}">Mr. Shake · {{ \App\Models\ShakeEvent::MASCOT[$event->mascot] }}</span>
     @if($view === 'kanban')
+        @if(auth()->user()->hasAreaAccess('finance'))
+            <p><strong>Saldo:</strong> {{ $event->document_total === null ? 'Valor total a definir' : \App\Models\EventMoney::format(max(0, $event->document_total - (int) $event->received_total)) }}</p>
+            <p>Quitação até {{ $event->paymentDue()->format('d/m/Y') }}</p>
+            @if(auth()->user()->hasAreaAccess('documents'))
+            @include('events.document-actions')
+        @endif
+        @endif
         @php($coverage = $event->coverage)
         <p><strong>Cobertura:</strong> {{ \App\Models\EventCoverage::TYPES[$coverage?->type ?? 'pending'] }}</p>
         @foreach($coverage?->roles() ?? [] as $role)

@@ -1,5 +1,7 @@
 <?php
 use App\Http\Controllers\ShakeEventController;
+use App\Http\Controllers\EventDocumentController;
+use App\Http\Controllers\EventPaymentController;
 use App\Http\Controllers\CoverageDriveController;
 use App\Http\Controllers\ShakeCalendarConnectionController;
 use App\Http\Controllers\TeamUserController;
@@ -51,6 +53,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/eventos/cobertura/drive/retorno', [CoverageDriveController::class, 'callback'])->name('coverage.drive.callback');
         Route::post('/eventos/cobertura/pasta', [CoverageDriveController::class, 'folder'])->name('coverage.drive.folder');
         Route::post('/eventos/{event}/cobertura/tentar', [ShakeEventController::class, 'retryCoverage'])->name('coverage.retry');
+        Route::get('/eventos/excluidos', [ShakeEventController::class, 'deleted'])->name('events.deleted');
+        Route::get('/eventos/excluidos/{eventId}', [ShakeEventController::class, 'deletedHistory'])->whereNumber('eventId')->name('events.deleted.history');
+        Route::middleware(RequireAreaAccess::class.':finance')->group(function () {
+            Route::get('/eventos/financeiro', [EventPaymentController::class, 'index'])->name('events.finance');
+            Route::post('/eventos/{event}/pagamentos', [EventPaymentController::class, 'store'])->name('events.payments.store');
+            Route::get('/eventos/{event}/documentos/novo/{kind}', [EventDocumentController::class, 'create'])->middleware(RequireAreaAccess::class.':documents')->name('events.documents.create');
+            Route::post('/eventos/{event}/documentos/novo/{kind}', [EventDocumentController::class, 'store'])->middleware(RequireAreaAccess::class.':documents')->name('events.documents.store');
+            Route::get('/eventos/{eventId}/documentos/{documentId}', [EventDocumentController::class, 'show'])
+                ->whereNumber(['eventId', 'documentId'])->name('events.documents.show');
+        });
         Route::resource('eventos', ShakeEventController::class)
             ->parameters(['eventos' => 'event'])
             ->names('events');

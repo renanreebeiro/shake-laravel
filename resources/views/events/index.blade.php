@@ -1,6 +1,9 @@
 @extends('events.layout')
 @section('title', 'Eventos')
 @section('content')
+    @foreach($errors->all() as $error)
+        <p class="notice" role="alert">{{ $error }}</p>
+    @endforeach
     <header class="events-hero">
         <div>
             <h1>Gestor de eventos</h1>
@@ -16,6 +19,19 @@
         </form>
     @endif
 
+    <p><a href="{{ route('events.deleted') }}">Ver eventos excluídos</a></p>
+
+    @if(auth()->user()->hasAreaAccess('finance'))
+        <p><a href="{{ route('events.finance') }}">Relatório financeiro mensal</a></p>
+    @endif
+    <section class="coverage-section">
+        <h2>Eventos de hoje</h2>
+        @forelse($todayEvents as $todayEvent)
+            <p>{{ $todayEvent->schedule() }} · <a href="{{ route('events.show', $todayEvent) }}">{{ $todayEvent->title }}</a></p>
+        @empty
+            <p>Nenhum evento para hoje.</p>
+        @endforelse
+    </section>
 
     <div class="events-toolbar">
         <nav class="events-switch" aria-label="Visualização dos eventos">

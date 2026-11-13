@@ -81,9 +81,11 @@
 fieldset.coverage-section { padding: .75rem 1rem 1rem; border: 1px solid var(--border); border-radius: .65rem; }
 .coverage-section legend { padding-inline: .35rem; font-weight: 800; }
 
-.event-map { display: block; height: clamp(220px, 40vw, 340px); margin-block: .85rem 1.4rem; }
 
 #event-address-search gmp-place-autocomplete { display: block; width: 100%; margin-top: 1rem; }
 #event-address-status:empty { display: none; }
 .event-delete button { background: #76302f; color: white; }
 .event-delete button:hover { background: #632322; }
+
+.event-document-actions { display: flex; flex-wrap: wrap; gap: .5rem 1rem; }
+.event-payment-progress { width: 100%; height: 1.25rem; accent-color: var(--orange); }

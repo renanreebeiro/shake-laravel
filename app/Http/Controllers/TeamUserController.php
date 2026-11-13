@@ -23,6 +23,7 @@ class TeamUserController
 
         $request->merge(['email' => strtolower(trim($request->string('email')->value()))]);
         $data = $request->validate([
+            'role' => ['required', Rule::in(array_keys(User::ROLES))],
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:254|unique:users,email',
             'password' => [
@@ -36,7 +37,9 @@ class TeamUserController
         ]);
 
         try {
-            User::create($data);
+            $user = new User(\Illuminate\Support\Arr::except($data, ['role']));
+            $user->assignRole($data['role']);
+            $user->saveOrFail();
         } catch (UniqueConstraintViolationException) {
             throw ValidationException::withMessages(['email' => 'Esse e-mail já está cadastrado.']);
         }
@@ -46,16 +49,13 @@ class TeamUserController
 
     public function updateAccess(Request $request, User $user)
     {
-        abort_unless($request->user()->is_admin && !$user->is_admin, 403);
+        abort_unless($request->user()->is_admin, 403);
+        abort_if($request->user()->is($user), 403);
 
-        $data = $request->validate([
-            'areas' => ['sometimes', 'array', 'list', 'max:'.count(User::AREAS)],
-            'areas.*' => ['required', 'string', 'distinct', Rule::in(array_keys(User::AREAS))],
-        ]);
+        $data = $request->validate(['role' => ['required', Rule::in(array_keys(User::ROLES))]]);
+        $user->assignRole($data['role']);
+        $user->saveOrFail();
 
-        $user->area_access = $data['areas'] ?? [];
-        $user->save();
-
-        return back()->with('message', 'Acessos de '.$user->name.' atualizados.');
+        return back()->with('message', 'Perfil de '.$user->name.' atualizado.');
     }
 }

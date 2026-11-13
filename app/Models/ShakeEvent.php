@@ -24,12 +24,41 @@ class ShakeEvent extends Model
         'no' => 'Sem presença',
     ];
 
-    protected $fillable = [
-        'title', 'event_date', 'starts_at', 'ends_at', 'address', 'maps_url', 'maps_embed_url', 'maps_place_id', 'quantity',
-        'quantity_unit', 'mascot', 'status', 'responsible', 'notes', 'all_day', 'ends_on',
+    public const DOCUMENT_FIELDS = [
+        'nome' => 'Nome do contratante', 'estado' => 'Estado civil', 'tipo_doc' => 'Tipo de documento',
+        'cpf' => 'CPF ou CNPJ', 'rg' => 'RG', 'endereco' => 'Endereço do contratante',
+        'evento' => 'Tipo de evento', 'hora' => 'Horário da entrega',
     ];
 
-    protected $casts = ['event_date' => 'immutable_date', 'ends_on' => 'immutable_date', 'all_day' => 'boolean'];
+    protected $fillable = [
+        'title', 'event_date', 'starts_at', 'ends_at', 'address', 'maps_url', 'maps_place_id', 'quantity',
+        'quantity_unit', 'mascot', 'status', 'responsible', 'notes', 'all_day', 'ends_on', 'document_total', 'document_data', 'payment_due_on',
+    ];
+
+    protected $hidden = ['document_data'];
+
+    protected $casts = ['payment_due_on' => 'immutable_date', 'document_total' => 'integer', 'document_data' => 'encrypted:array', 'event_date' => 'immutable_date', 'ends_on' => 'immutable_date', 'all_day' => 'boolean'];
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(EventPayment::class);
+    }
+
+    public function canConfirm(): bool
+    {
+        return $this->document_total > 0
+            && $this->payments()->sum('amount') >= intdiv($this->document_total * 3 + 9, 10);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(EventDocument::class);
+    }
+
+    public function paymentDue()
+    {
+        return $this->payment_due_on ?? $this->event_date?->subDays(10);
+    }
 
     public function coverage(): HasOne
     {
@@ -54,15 +83,9 @@ class ShakeEvent extends Model
             : null);
     }
 
-    public function mapsPreview(): ?string
+    public function activities(): HasMany
     {
-        if ($this->maps_place_id && config('shake-maps.browser_key')) {
-            return 'https://www.google.com/maps/embed/v1/place?'.http_build_query([
-                'key' => config('shake-maps.browser_key'), 'q' => 'place_id:'.$this->maps_place_id,
-            ]);
-        }
-
-        return $this->maps_embed_url;
+        return $this->hasMany(EventActivity::class);
     }
 
     public function startLabel(): string

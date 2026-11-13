@@ -42,7 +42,6 @@
             @if(config('shake-maps.browser_key'))
                 <div id="event-address-search"></div>
                 <p id="event-address-status" role="status"></p>
-                <iframe id="event-address-preview" class="event-map" title="Prévia do local escolhido" referrerpolicy="strict-origin-when-cross-origin" hidden></iframe>
             @endif
             <input type="hidden" id="maps_place_id" name="maps_place_id" value="{{ old('maps_place_id', $event->maps_place_id) }}">
             <label for="address">Endereço</label>
@@ -52,9 +51,6 @@
             <input id="maps_url" name="maps_url" type="url" maxlength="2048" placeholder="https://maps.app.goo.gl/…" value="{{ old('maps_url', $event->maps_url) }}" aria-describedby="maps-help">
             <p id="maps-help">No Maps, selecione o local ou o pino e use Compartilhar → Copiar link. <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">Abrir Google Maps ↗</a></p>
 
-            <label for="maps_embed_url">Prévia do mapa (opcional)</label>
-            <input id="maps_embed_url" name="maps_embed_url" maxlength="12000" value="{{ old('maps_embed_url', $event->maps_embed_url) }}" aria-describedby="maps-embed-help">
-            <p id="maps-embed-help">No computador, selecione o ponto no Google Maps e escolha Compartilhar → Incorporar um mapa → Copiar HTML. Cole o código aqui.</p>
 
             <div class="events-fields">
                 <div>
@@ -89,6 +85,9 @@
             <label for="notes">Observações para a equipe</label>
             <textarea id="notes" name="notes" maxlength="4000" required>{{ old('notes', $event->notes) }}</textarea>
 
+            @if(auth()->user()->hasAreaAccess('finance'))
+                @include('events.document-fields')
+            @endif
             @include('events.coverage-form')
             <button type="submit">Salvar evento</button>
         </form>
@@ -99,31 +98,16 @@
                 const key = @json(config('shake-maps.browser_key'));
                 const address = document.getElementById('address');
                 const placeId = document.getElementById('maps_place_id');
-                const preview = document.getElementById('event-address-preview');
                 const status = document.getElementById('event-address-status');
                 let revision = 0;
-
-                function updatePreview() {
-                    preview.hidden = !placeId.value;
-                    if (placeId.value) {
-                        preview.src = 'https://www.google.com/maps/embed/v1/place?' + new URLSearchParams({
-                            key, q: 'place_id:' + placeId.value,
-                        });
-                    } else {
-                        preview.removeAttribute('src');
-                    }
-                }
 
                 address.addEventListener('input', () => {
                     revision++;
                     if (placeId.value) {
                         document.getElementById('maps_url').value = '';
-                        document.getElementById('maps_embed_url').value = '';
                     }
                     placeId.value = '';
-                    updatePreview();
                 });
-                updatePreview();
 
                 function unavailable() {
                     status.textContent = 'As sugestões do Google estão indisponíveis. Você pode preencher o endereço abaixo.';
@@ -149,9 +133,7 @@
                                 address.value = place.formattedAddress;
                                 placeId.value = place.id;
                                 document.getElementById('maps_url').value = '';
-                                document.getElementById('maps_embed_url').value = '';
                                 status.textContent = 'Local selecionado no Google Maps.';
-                                updatePreview();
                             } catch {
                                 if (selected === revision) unavailable();
                             }

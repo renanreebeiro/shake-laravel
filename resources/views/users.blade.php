@@ -3,8 +3,8 @@
 @section('content')
 <h1>Usuários</h1>
 <p>Crie um acesso individual para cada pessoa da equipe.</p>
-@if($errors->has('areas') || $errors->has('areas.*'))
-    <p class="notice" role="alert">Selecione apenas as áreas disponíveis e salve novamente.</p>
+@if($errors->has('role'))
+    <p class="notice" role="alert">Escolha um perfil válido e salve novamente.</p>
 @endif
 <div class="layout">
     <section>
@@ -25,6 +25,12 @@
 
             <label for="password_confirmation">Confirme a senha</label>
             <input id="password_confirmation" type="password" name="password_confirmation" minlength="12" maxlength="72" autocomplete="new-password" required>
+            <label for="role">Perfil</label>
+            <select id="role" name="role" required>
+                @foreach(\App\Models\User::ROLES as $role => $label)
+                    <option value="{{ $role }}" @selected(old('role', 'member') === $role)>{{ $label }}</option>
+                @endforeach
+            </select>
             <button>Criar conta</button>
         </form>
     </section>
@@ -33,23 +39,20 @@
         <ul class="team-accounts">
             @foreach($users as $user)
                 <li>
-                    <strong>{{ $user->name }}</strong> · {{ $user->is_admin ? 'Administração' : 'Equipe' }}<br>{{ $user->email }}
-                    @if(!$user->is_admin)
+                    <strong>{{ $user->name }}</strong> · {{ \App\Models\User::ROLES[$user->role()] }}<br>{{ $user->email }}
+                    @unless(auth()->user()->is($user))
                         <form method="post" action="{{ route('users.access', $user) }}">
                             @csrf
                             @method('PATCH')
-                            <fieldset class="area-access">
-                                <legend>Áreas liberadas para {{ $user->name }}</legend>
-                                @foreach(\App\Models\User::AREAS as $area => $label)
-                                    <label>
-                                        <input type="checkbox" role="switch" name="areas[]" value="{{ $area }}" @checked($user->hasAreaAccess($area))>
-                                        {{ $label }}
-                                    </label>
+                            <label for="role-{{ $user->id }}">Perfil de {{ $user->name }}</label>
+                            <select id="role-{{ $user->id }}" name="role" required>
+                                @foreach(\App\Models\User::ROLES as $role => $label)
+                                    <option value="{{ $role }}" @selected($user->role() === $role)>{{ $label }}</option>
                                 @endforeach
-                            </fieldset>
-                            <button type="submit">Salvar acessos</button>
+                            </select>
+                            <button type="submit">Salvar perfil</button>
                         </form>
-                    @endif
+                    @endunless
                 </li>
             @endforeach
         </ul>
