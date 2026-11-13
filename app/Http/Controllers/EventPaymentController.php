@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\EventMoney;
 use App\Models\EventPayment;
 use App\Models\ShakeEvent;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -42,12 +43,44 @@ class EventPaymentController
 
     public function index(Request $request)
     {
-        $month = $request->validate(['month' => 'nullable|date_format:Y-m'])['month'] ?? now('America/Belem')->format('Y-m');
-        $start = \Carbon\CarbonImmutable::createFromFormat('!Y-m', $month);
+        $filters = $request->validate([
+            'month' => 'nullable|date_format:Y-m',
+            'event_month' => 'nullable|date_format:Y-m',
+        ]);
+        $currentMonth = now('America/Belem')->format('Y-m');
+        $month = $filters['month'] ?? $currentMonth;
+        $eventMonth = $filters['event_month'] ?? $currentMonth;
+        $start = CarbonImmutable::createFromFormat('!Y-m', $month);
+        $agendaStart = CarbonImmutable::createFromFormat('!Y-m', $eventMonth);
         $dates = [$start->toDateString(), $start->endOfMonth()->toDateString()];
-        $events = ShakeEvent::whereBetween('event_date', $dates)->where('status', '!=', 'cancelled')->orderBy('event_date')->get();
-        $payments = EventPayment::with('event')->whereBetween('received_on', $dates)->latest('received_on')->get();
 
-        return response()->view('events.monthly-finance', compact('month', 'events', 'payments'))->header('Cache-Control', 'private, no-store');
+        $events = ShakeEvent::whereBetween('event_date', $dates)->where('status', '!=', 'cancelled')
+            ->withSum('payments', 'amount')->orderBy('event_date')->get();
+        $agenda = ShakeEvent::whereBetween('event_date', [$agendaStart->toDateString(), $agendaStart->endOfMonth()->toDateString()])
+            ->where('status', '!=', 'cancelled')->orderBy('event_date')->orderBy('starts_at')->get();
+        $payments = EventPayment::with(['event' => fn ($query) => $query->withSum('payments', 'amount')])
+            ->whereBetween('received_on', $dates)->latest('received_on')->get();
+        $paymentsByEvent = $payments->groupBy('shake_event_id');
+        $ledger = $events->concat($payments->pluck('event')->filter())->unique('id')->sortBy('event_date');
+
+        $total = $events->sum('document_total');
+        $balance = $events->sum(fn ($event) => max(0, $event->document_total - $event->payments_sum_amount));
+        $received = $payments->sum('amount');
+        $paymentsByDay = $payments->groupBy(fn ($payment) => $payment->received_on->day)->sortKeys();
+        $chartMax = max(100, (int) ceil($received / 20000) * 20000);
+        $trend = 'M0 100';
+        $runningTotal = 0;
+        foreach ($paymentsByDay as $day => $entries) {
+            $runningTotal += $entries->sum('amount');
+            $x = round(($day - 1) * 100 / ($start->daysInMonth - 1), 3);
+            $y = round(100 - $runningTotal * 100 / $chartMax, 3);
+            $trend .= " H{$x} V{$y}";
+        }
+        $trend .= ' H100';
+
+        return response()->view('events.monthly-finance', compact(
+            'month', 'eventMonth', 'agenda', 'events', 'payments', 'paymentsByEvent', 'ledger',
+            'total', 'balance', 'received', 'chartMax', 'trend', 'start',
+        ))->header('Cache-Control', 'private, no-store');
     }
 }
