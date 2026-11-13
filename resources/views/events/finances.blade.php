@@ -7,6 +7,7 @@
     <div class="events-detail-heading">
         <h2>Financeiro e documentos</h2>
         @unless($archived ?? false)
+            <a class="hero-link" href="{{ route('events.finance.export', $event) }}" target="_blank" rel="noopener">Exportar evento em PDF</a>
             @if(auth()->user()->hasAreaAccess('documents'))
                 @include('events.document-actions', ['asButtons' => true])
             @endif

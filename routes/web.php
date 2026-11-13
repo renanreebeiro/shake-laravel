@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/eventos/excluidos/{eventId}', [ShakeEventController::class, 'deletedHistory'])->whereNumber('eventId')->name('events.deleted.history');
         Route::middleware(RequireAreaAccess::class.':finance')->group(function () {
             Route::get('/eventos/financeiro', [EventPaymentController::class, 'index'])->name('events.finance');
+            Route::get('/eventos/{event}/financeiro/pdf', [EventPaymentController::class, 'exportEvent'])->name('events.finance.export');
             Route::post('/eventos/{event}/pagamentos', [EventPaymentController::class, 'store'])->name('events.payments.store');
             Route::get('/eventos/{event}/documentos/novo/{kind}', [EventDocumentController::class, 'create'])->middleware(RequireAreaAccess::class.':documents')->name('events.documents.create');
             Route::post('/eventos/{event}/documentos/novo/{kind}', [EventDocumentController::class, 'store'])->middleware(RequireAreaAccess::class.':documents')->name('events.documents.store');

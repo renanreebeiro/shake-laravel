@@ -68,6 +68,18 @@ class EventPaymentController
         $total = $events->sum('document_total');
         $balance = $events->sum(fn ($event) => max(0, $event->document_total - $event->payments_sum_amount));
         $received = $payments->sum('amount');
+        if ($request->query('format') === 'pdf') {
+            return response()->view('events.finance-export', [
+                'reportTitle' => 'Relatório financeiro mensal',
+                'period' => $start->format('m/Y'),
+                'total' => $total,
+                'received' => $received,
+                'balance' => $balance,
+                'ledger' => $ledger,
+                'payments' => $payments,
+            ])->header('Cache-Control', 'private, no-store');
+        }
+
         $paymentsByDay = $payments->groupBy(fn ($payment) => $payment->received_on->day)->sortKeys();
         $chartMax = max(100, (int) ceil($received / 20000) * 20000);
         $trend = 'M0 100';
@@ -84,5 +96,22 @@ class EventPaymentController
             'month', 'eventMonth', 'agenda', 'events', 'payments', 'paymentsByEvent', 'ledger',
             'total', 'balance', 'received', 'chartMax', 'trend', 'start',
         ))->header('Cache-Control', 'private, no-store');
+    }
+
+    public function exportEvent(ShakeEvent $event)
+    {
+        $payments = $event->payments()->latest('received_on')->latest('id')->get();
+        $total = $event->document_total;
+        $received = $payments->sum('amount');
+
+        return response()->view('events.finance-export', [
+            'reportTitle' => 'Relatório financeiro do evento',
+            'period' => $event->title.' · '.$event->event_date->format('d/m/Y').' · '.$event->schedule(),
+            'total' => $total,
+            'received' => $received,
+            'balance' => $total === null ? null : max(0, $total - $received),
+            'event' => $event,
+            'payments' => $payments,
+        ])->header('Cache-Control', 'private, no-store');
     }
 }

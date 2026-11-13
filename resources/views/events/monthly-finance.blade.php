@@ -10,6 +10,7 @@
         <div class="finance-overview">
             <section class="finance-summary">
                 <h1>Relatório financeiro</h1>
+                <a class="hero-link" href="{{ route('events.finance', ['month' => $month, 'format' => 'pdf']) }}" target="_blank" rel="noopener">Exportar mês em PDF</a>
                 <p>Valor dos eventos do mês</p>
                 <strong class="finance-total">{{ EventMoney::format($total) }}</strong>
                 <p>{{ $events->count() }} {{ $events->count() === 1 ? 'evento' : 'eventos' }}</p>
