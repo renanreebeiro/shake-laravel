@@ -1,9 +1,23 @@
 @extends('events.layout')
 @section('title', 'Eventos')
+@push('head')
+    <style>
+        .events-finance-divider { margin: 1rem 0; border: 0; border-top: 1px solid var(--border); }
+    </style>
+@endpush
 @section('content')
     @foreach($errors->all() as $error)
         <p class="notice" role="alert">{{ $error }}</p>
     @endforeach
+    @php($canViewFinance = auth()->user()->hasAreaAccess('finance'))
+    @if($canViewFinance)
+        <section class="events-hero" aria-labelledby="events-finance-title">
+            <h2 id="events-finance-title">Relatório financeiro</h2>
+            <a class="hero-link" href="{{ route('events.finance') }}">Ver relatórios</a>
+        </section>
+        <hr class="events-finance-divider">
+    @endif
+
     <header class="events-hero">
         <div>
             <h1>Gestor de eventos</h1>
@@ -12,18 +26,16 @@
         <a class="hero-link" href="{{ route('events.create') }}">＋ Novo evento</a>
     </header>
 
-    @if(auth()->user()->is_admin && app(\App\Services\ShakeGoogleCalendar::class)->configured())
-        <form method="post" action="{{ route('calendar.connect') }}">
-            @csrf
-            <button type="submit">{{ app(\App\Services\ShakeGoogleCalendar::class)->connected() ? 'Reconectar Google Agenda' : 'Conectar Google Agenda' }}</button>
-        </form>
+    @if(auth()->user()->is_admin)
+        @php($calendar = app(\App\Services\ShakeGoogleCalendar::class))
+        @if($calendar->configured() && !$calendar->connected())
+            <form method="post" action="{{ route('calendar.connect') }}">
+                @csrf
+                <button type="submit">Conectar Google Agenda</button>
+            </form>
+        @endif
     @endif
 
-    <p><a href="{{ route('events.deleted') }}">Ver eventos excluídos</a></p>
-
-    @if(auth()->user()->hasAreaAccess('finance'))
-        <p><a href="{{ route('events.finance') }}">Relatório financeiro mensal</a></p>
-    @endif
     <section class="coverage-section">
         <h2>Eventos de hoje</h2>
         @forelse($todayEvents as $todayEvent)
