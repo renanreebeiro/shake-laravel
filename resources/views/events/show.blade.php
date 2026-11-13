@@ -33,14 +33,14 @@
             <p class="events-notes">{{ $event->notes }}</p>
         @endif
     </section>
-    <form class="event-delete" method="post" action="{{ route('events.destroy', $event) }}" onsubmit="return confirm('Excluir este evento da Central? O evento no Google Agenda será mantido.')">
-        @csrf
-        @method('DELETE')
-        <button type="submit">Excluir evento</button>
-    </form>
     @if(auth()->user()->hasAreaAccess('finance'))
         @include('events.finances')
     @endif
     @include('events.coverage-details')
     @include('events.activity')
+    <form class="event-delete" method="post" action="{{ route('events.destroy', $event) }}" onsubmit="return confirm('Excluir este evento da Central? O evento no Google Agenda será mantido.')">
+        @csrf
+        @method('DELETE')
+        <button type="submit">Excluir evento</button>
+    </form>
 @endsection

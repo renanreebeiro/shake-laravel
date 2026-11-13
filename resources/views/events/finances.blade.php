@@ -4,12 +4,14 @@
     $balance = max(0, ($total ?? 0) - $received);
 @endphp
 <section class="events-sheet coverage-section">
-    <h2>Financeiro e documentos</h2>
-    @unless($archived ?? false)
-        @if(auth()->user()->hasAreaAccess('documents'))
-            @include('events.document-actions')
-        @endif
-    @endunless
+    <div class="events-detail-heading">
+        <h2>Financeiro e documentos</h2>
+        @unless($archived ?? false)
+            @if(auth()->user()->hasAreaAccess('documents'))
+                @include('events.document-actions', ['asButtons' => true])
+            @endif
+        @endunless
+    </div>
     <dl class="events-facts">
         <div><dt>Valor total</dt><dd>{{ $total === null ? 'A definir' : \App\Models\EventMoney::format($total) }}</dd></div>
         <div><dt>Recebido</dt><dd>{{ \App\Models\EventMoney::format($received) }}</dd></div>
