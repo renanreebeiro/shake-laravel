@@ -20,7 +20,7 @@ class SyncShakeCalendar
 
         $remoteEvents = $this->readEvents($google);
         $counts = array_fill_keys(['importados', 'enviados', 'atualizados', 'cancelados', 'conflitos', 'ignorados'], 0);
-        $existing = ShakeEvent::whereNull('google_event_id')->pluck('id')->keyBy(fn ($id) => $this->remoteId($id, $calendarKey));
+        $existing = ShakeEvent::withTrashed()->whereNull('google_event_id')->pluck('id')->keyBy(fn ($id) => $this->remoteId($id, $calendarKey));
         foreach ($remoteEvents as $remote) {
             $result = DB::transaction(fn () => $this->reconcile($google, $calendarKey, $remote, $existing[$remote['id']] ?? null));
             if ($result !== null) {
@@ -61,9 +61,13 @@ class SyncShakeCalendar
 
     private function reconcile(PendingRequest $google, string $calendarKey, array $remote, ?int $unlinkedId): ?string
     {
-        $local = ShakeEvent::where('google_event_id', $remote['id'])->lockForUpdate()->first();
+        $local = ShakeEvent::withTrashed()->where('google_event_id', $remote['id'])->lockForUpdate()->first();
         if (!$local && $unlinkedId !== null) {
-            $local = ShakeEvent::whereKey($unlinkedId)->whereNull('google_event_id')->lockForUpdate()->first();
+            $local = ShakeEvent::withTrashed()->whereKey($unlinkedId)->whereNull('google_event_id')->lockForUpdate()->first();
+        }
+
+        if ($local?->trashed()) {
+            return null;
         }
 
         if (($remote['status'] ?? null) === 'cancelled') {
@@ -110,6 +114,11 @@ class SyncShakeCalendar
 
         if ($remoteChanged) {
             $local->fill($incoming);
+            if ($local->isDirty('address')) {
+                $local->maps_place_id = null;
+                $local->maps_url = null;
+                $local->maps_embed_url = null;
+            }
             $renameCoverage = $local->isDirty(['title', 'event_date']);
             $this->link($local, $remote, $calendarKey);
             if ($renameCoverage) {

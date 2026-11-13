@@ -39,6 +39,12 @@
                 </div>
             </div>
 
+            @if(config('shake-maps.browser_key'))
+                <div id="event-address-search"></div>
+                <p id="event-address-status" role="status"></p>
+                <iframe id="event-address-preview" class="event-map" title="Prévia do local escolhido" referrerpolicy="strict-origin-when-cross-origin" hidden></iframe>
+            @endif
+            <input type="hidden" id="maps_place_id" name="maps_place_id" value="{{ old('maps_place_id', $event->maps_place_id) }}">
             <label for="address">Endereço</label>
             <input id="address" name="address" maxlength="250" placeholder="Rua, número, bairro e cidade" value="{{ old('address', $event->address) }}" required>
 
@@ -87,6 +93,92 @@
             <button type="submit">Salvar evento</button>
         </form>
     </section>
+    @if(config('shake-maps.browser_key'))
+        <script>
+            (() => {
+                const key = @json(config('shake-maps.browser_key'));
+                const address = document.getElementById('address');
+                const placeId = document.getElementById('maps_place_id');
+                const preview = document.getElementById('event-address-preview');
+                const status = document.getElementById('event-address-status');
+                let revision = 0;
+
+                function updatePreview() {
+                    preview.hidden = !placeId.value;
+                    if (placeId.value) {
+                        preview.src = 'https://www.google.com/maps/embed/v1/place?' + new URLSearchParams({
+                            key, q: 'place_id:' + placeId.value,
+                        });
+                    } else {
+                        preview.removeAttribute('src');
+                    }
+                }
+
+                address.addEventListener('input', () => {
+                    revision++;
+                    if (placeId.value) {
+                        document.getElementById('maps_url').value = '';
+                        document.getElementById('maps_embed_url').value = '';
+                    }
+                    placeId.value = '';
+                    updatePreview();
+                });
+                updatePreview();
+
+                function unavailable() {
+                    status.textContent = 'As sugestões do Google estão indisponíveis. Você pode preencher o endereço abaixo.';
+                }
+
+                window.initShakeEventAddress = async () => {
+                    try {
+                        const {PlaceAutocompleteElement} = await google.maps.importLibrary('places');
+                        const search = new PlaceAutocompleteElement({includedRegionCodes: ['br'], requestedLanguage: 'pt-BR'});
+                        search.placeholder = 'Digite parte do endereço ou o nome do local';
+                        search.setAttribute('aria-label', 'Buscar endereço no Google Maps');
+                        search.addEventListener('gmp-error', unavailable);
+                        search.addEventListener('gmp-select', async ({placePrediction}) => {
+                            const selected = ++revision;
+                            try {
+                                const place = placePrediction.toPlace();
+                                await place.fetchFields({fields: ['formattedAddress']});
+                                if (selected !== revision) return;
+                                if (!place.formattedAddress || !place.id || place.formattedAddress.length > address.maxLength) {
+                                    status.textContent = 'Confira o endereço e preencha o campo abaixo.';
+                                    return;
+                                }
+                                address.value = place.formattedAddress;
+                                placeId.value = place.id;
+                                document.getElementById('maps_url').value = '';
+                                document.getElementById('maps_embed_url').value = '';
+                                status.textContent = 'Local selecionado no Google Maps.';
+                                updatePreview();
+                            } catch {
+                                if (selected === revision) unavailable();
+                            }
+                        });
+                        document.getElementById('event-address-search').append(search);
+                    } catch {
+                        unavailable();
+                    }
+                };
+
+                window.gm_authFailure = unavailable;
+                const script = document.createElement('script');
+                script.src = 'https://maps.googleapis.com/maps/api/js?' + new URLSearchParams({
+                    key, loading: 'async', callback: 'initShakeEventAddress', language: 'pt-BR', region: 'BR',
+                });
+                script.async = true;
+                script.onerror = unavailable;
+                document.head.append(script);
+            })();
+        </script>
+    @else
+        <script>
+            document.getElementById('address').addEventListener('input', () => {
+                document.getElementById('maps_place_id').value = '';
+            });
+        </script>
+    @endif
     <script>
         const allDay = document.getElementById('all_day');
         function updateEventTimes() {

@@ -53,8 +53,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/eventos/{event}/cobertura/tentar', [ShakeEventController::class, 'retryCoverage'])->name('coverage.retry');
         Route::resource('eventos', ShakeEventController::class)
             ->parameters(['eventos' => 'event'])
-            ->names('events')
-            ->except('destroy');
+            ->names('events');
         Route::patch('/eventos/{event}/status', [ShakeEventController::class, 'status'])->name('events.status');
     });
 

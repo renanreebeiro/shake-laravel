@@ -3,11 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ShakeEvent extends Model
 {
+    use SoftDeletes;
+
     public const STATUSES = [
         'planning' => 'Em planejamento',
         'confirmed' => 'Confirmado',
@@ -22,7 +25,7 @@ class ShakeEvent extends Model
     ];
 
     protected $fillable = [
-        'title', 'event_date', 'starts_at', 'ends_at', 'address', 'maps_url', 'maps_embed_url', 'quantity',
+        'title', 'event_date', 'starts_at', 'ends_at', 'address', 'maps_url', 'maps_embed_url', 'maps_place_id', 'quantity',
         'quantity_unit', 'mascot', 'status', 'responsible', 'notes', 'all_day', 'ends_on',
     ];
 
@@ -40,9 +43,26 @@ class ShakeEvent extends Model
 
     public function mapsLink(): ?string
     {
+        if ($this->maps_place_id) {
+            return 'https://www.google.com/maps/search/?'.http_build_query([
+                'api' => 1, 'query' => $this->address, 'query_place_id' => $this->maps_place_id,
+            ]);
+        }
+
         return $this->maps_url ?: ($this->address
             ? 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($this->address)
             : null);
+    }
+
+    public function mapsPreview(): ?string
+    {
+        if ($this->maps_place_id && config('shake-maps.browser_key')) {
+            return 'https://www.google.com/maps/embed/v1/place?'.http_build_query([
+                'key' => config('shake-maps.browser_key'), 'q' => 'place_id:'.$this->maps_place_id,
+            ]);
+        }
+
+        return $this->maps_embed_url;
     }
 
     public function startLabel(): string

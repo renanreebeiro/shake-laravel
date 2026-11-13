@@ -18,7 +18,7 @@
                 <dd>
                     {{ $event->address ?: 'A definir' }}
                     @if($event->mapsLink())
-                        <br><a href="{{ $event->mapsLink() }}" target="_blank" rel="noopener noreferrer">{{ $event->maps_url ? 'Abrir ponto exato no Google Maps' : 'Buscar endereço no Google Maps' }} ↗</a>
+                        <br><a href="{{ $event->mapsLink() }}" target="_blank" rel="noopener noreferrer">{{ ($event->maps_url || $event->maps_place_id) ? 'Abrir ponto exato no Google Maps' : 'Buscar endereço no Google Maps' }} ↗</a>
                     @endif
                 </dd>
             </div>
@@ -28,14 +28,19 @@
                 <div><dt>Responsável</dt><dd>{{ $event->responsible }}</dd></div>
             @endif
         </dl>
-        @if($event->maps_embed_url)
+        @if($map = $event->mapsPreview())
             <h2>Mapa do evento</h2>
-            <iframe src="{{ $event->maps_embed_url }}" title="Mapa do local do evento" loading="lazy" referrerpolicy="no-referrer" class="event-map" allowfullscreen></iframe>
+            <iframe src="{{ $map }}" title="Mapa do local do evento" loading="lazy" referrerpolicy="{{ $event->maps_place_id ? 'strict-origin-when-cross-origin' : 'no-referrer' }}" class="event-map" allowfullscreen></iframe>
         @endif
         @if($event->notes)
             <h2>Observações para a equipe</h2>
             <p class="events-notes">{{ $event->notes }}</p>
         @endif
     </section>
+    <form class="event-delete" method="post" action="{{ route('events.destroy', $event) }}" onsubmit="return confirm('Excluir este evento da Central? O evento no Google Agenda será mantido.')">
+        @csrf
+        @method('DELETE')
+        <button type="submit">Excluir evento</button>
+    </form>
     @include('events.coverage-details')
 @endsection

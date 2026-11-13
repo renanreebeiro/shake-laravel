@@ -78,10 +78,29 @@ class ShakeEventController
         $data = $this->validated($request);
         $coverage = $this->coverageData($request);
         $this->changeEvent($event, function () use ($event, $data, $coverage) {
+            if (array_key_exists('maps_place_id', $data) && !$data['maps_place_id']
+                && $event->maps_place_id && $data['address'] !== $event->address) {
+                foreach (['maps_url', 'maps_embed_url'] as $field) {
+                    if (($data[$field] ?? null) === $event->$field) {
+                        $data[$field] = null;
+                    }
+                }
+            }
             $event->update($data);
             $this->saveCoverage($event, $coverage);
         });
         return redirect()->route('events.show', $event)->with('message', 'Evento atualizado.');
+    }
+
+    public function destroy(ShakeEvent $event)
+    {
+        $deleted = Cache::lock('event-coverage:'.$event->id, 600)->get(fn () => $event->delete());
+        if (!$deleted) {
+            return back()->with('message', 'Aguarde o processamento da cobertura e tente excluir novamente.');
+        }
+
+        return redirect()->route('events.index', ['month' => $event->event_date->format('Y-m')])
+            ->with('message', 'Evento excluído da Central.');
     }
 
     public function status(Request $request, ShakeEvent $event)
@@ -236,6 +255,7 @@ class ShakeEventController
                     $fail('Cole um link de compartilhamento do Google Maps.');
                 }
             }],
+            'maps_place_id' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z0-9_-]+$/D'],
             'maps_embed_url' => ['nullable', 'string', 'max:10000', function ($attribute, $value, $fail) {
                 if (!preg_match('~^https://www\.google\.com/maps/embed\?pb=[^\s<>"\']+$~D', $value)) {
                     $fail('Cole o código gerado pelo Google Maps em Compartilhar → Incorporar um mapa.');

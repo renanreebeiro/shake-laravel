@@ -104,3 +104,17 @@ título, local e horários iguais nos dois lados e rode a sincronização novame
   integração na função. O status Enviado significa aceito pelo serviço de envio.
   Se o serviço não confirmar o envio, confira se houve entrega antes de autorizar
   a repetição na ficha do evento.
+
+### Sugestões de endereço e mapa dos eventos
+
+Habilite Maps JavaScript API, Places API (New) e Maps Embed API em um projeto
+Google Cloud com faturamento configurado. Crie uma chave restrita a essas APIs
+e ao site `https://documentos.shakeburger.com.br/*`. Defina a chave em
+`SHAKE_MAPS_BROWSER_KEY` no `.env` da Hostinger, rode `php artisan config:clear`
+e publique `public/assets/events.css`. A chave é usada pelo navegador.
+
+Ao selecionar uma sugestão, a Central salva o endereço e o ID do local para
+exibir o mapa. A ficha continua aceitando o preenchimento manual.
+
+Excluir um evento o retira da Central. A agenda Google e os arquivos no Drive
+são preservados, e a sincronização ignora o evento excluído.
