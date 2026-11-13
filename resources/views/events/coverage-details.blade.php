@@ -20,6 +20,16 @@
                 <a href="{{ $coverage->folderUrl($role) }}" target="_blank" rel="noopener noreferrer">{{ \App\Models\EventCoverage::FOLDERS[$role] }} ↗</a>
             @endif
         @endforeach
+        @php($whatsappLinks = $coverage->whatsappLinks($event))
+        @if($whatsappLinks)
+            <h3>Compartilhar pelo WhatsApp</h3>
+            <p>O WhatsApp abre com a mensagem pronta. Confira se o profissional tem acesso à pasta antes de enviar.</p>
+            <ul>
+                @foreach($whatsappLinks as $link)
+                    <li><a href="{{ $link['url'] }}" target="_blank" rel="noopener noreferrer">Abrir WhatsApp de {{ $link['label'] }} ↗</a></li>
+                @endforeach
+            </ul>
+        @endif
         @if($coverage->pending)
             <p role="status">Cobertura aguardando processamento.</p>
         @endif

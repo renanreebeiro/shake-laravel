@@ -66,6 +66,60 @@ class EventCoverage extends Model
         return 'Envio pendente';
     }
 
+    public function whatsappLinks(ShakeEvent $event): array
+    {
+        $contacts = [];
+        foreach ($this->roles() as $role) {
+            $contact = $this->contacts[$role] ?? [];
+            $phone = $contact['whatsapp'] ?? '';
+            if (!preg_match('/^\+[1-9][0-9]{7,14}$/D', $phone)) {
+                continue;
+            }
+
+            $email = $contact['email'] ?? '';
+            $key = $phone.'|'.($email ?: ($contact['name'] ?? $role));
+            $contacts[$key] ??= ['name' => $contact['name'] ?? '', 'phone' => $phone, 'roles' => []];
+            $contacts[$key]['roles'][] = $role;
+        }
+
+        $links = [];
+        foreach ($contacts as $contact) {
+            $folders = [];
+            foreach ($contact['roles'] as $role) {
+                $url = $this->folderUrl($role);
+                if (!$url) {
+                    continue 2;
+                }
+                $folders[] = self::FOLDERS[$role].': '.$url;
+            }
+
+            $name = $contact['name'];
+            $lines = [
+                $name ? "Olá, {$name}!" : 'Olá!',
+                '',
+                'Segue o link para enviar os arquivos da cobertura da Shake Burger.',
+                'Evento: '.$event->title,
+                'Data: '.$event->event_date->format('d/m/Y'),
+            ];
+            if ($this->starts_at && $this->ends_at) {
+                $lines[] = 'Horário da cobertura: '.substr($this->starts_at, 0, 5).' às '.substr($this->ends_at, 0, 5);
+            }
+            if ($event->address) {
+                $lines[] = 'Endereço: '.$event->address;
+            }
+            if ($this->deadline) {
+                $lines[] = 'Prazo para envio: '.$this->deadline->format('d/m/Y');
+            }
+
+            $links[] = [
+                'label' => $name ?: implode(' e ', array_map(fn ($role) => self::ROLES[$role], $contact['roles'])),
+                'url' => 'https://wa.me/'.substr($contact['phone'], 1).'?text='.rawurlencode(implode("\n", [...$lines, '', ...$folders])),
+            ];
+        }
+
+        return $links;
+    }
+
     public function folderUrl(string $role = 'event'): ?string
     {
         return !empty($this->folders[$role]['ready'])
