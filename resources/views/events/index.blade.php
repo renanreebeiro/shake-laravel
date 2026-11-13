@@ -18,7 +18,15 @@
             line-height: 1.06;
             letter-spacing: -.045em;
         }
+        .events-banner-content {
+            display: grid;
+            gap: .9rem;
+            width: 60%;
+        }
+        .events-banner-content .hero-link { justify-self: center; }
         @media (max-width: 600px) {
+            .events-banner-content { width: min(100%, 18rem); }
+            .events-banner-content .hero-link { justify-self: start; }
             .events-hero.events-dashboard-banner {
                 background-image: linear-gradient(90deg, #18100cf5, #18100c80), var(--banner-image);
             }
@@ -30,22 +38,25 @@
     @foreach($errors->all() as $error)
         <p class="notice" role="alert">{{ $error }}</p>
     @endforeach
-    @php($canViewFinance = auth()->user()->hasAreaAccess('finance'))
-    @if($canViewFinance)
-        <section class="events-hero events-dashboard-banner events-dashboard-banner--finance" aria-labelledby="events-finance-title">
-            <h2 id="events-finance-title">Relatório financeiro</h2>
-            <a class="hero-link" href="{{ route('events.finance') }}">Ver relatórios</a>
-        </section>
-        <hr class="events-finance-divider">
-    @endif
-
     <header class="events-hero events-dashboard-banner events-dashboard-banner--schedule">
-        <div>
-            <h1>Gestor de eventos</h1>
-            <p>Agenda e planejamento da equipe Shake Burger</p>
+        <div class="events-banner-content">
+            <div>
+                <h1>Gestor de eventos</h1>
+                <p>Agenda e planejamento da equipe Shake Burger</p>
+            </div>
+            <a class="hero-link" href="{{ route('events.create') }}">＋ Novo evento</a>
         </div>
-        <a class="hero-link" href="{{ route('events.create') }}">＋ Novo evento</a>
     </header>
+
+    @if(auth()->user()->hasAreaAccess('finance'))
+        <hr class="events-finance-divider">
+        <section class="events-hero events-dashboard-banner events-dashboard-banner--finance" aria-labelledby="events-finance-title">
+            <div class="events-banner-content">
+                <h2 id="events-finance-title">Relatório financeiro</h2>
+                <a class="hero-link" href="{{ route('events.finance') }}">Ver relatórios</a>
+            </div>
+        </section>
+    @endif
 
     @if(auth()->user()->is_admin)
         @php($calendar = app(\App\Services\ShakeGoogleCalendar::class))
