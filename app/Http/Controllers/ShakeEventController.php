@@ -138,6 +138,26 @@ class ShakeEventController
         if (!$request->has('coverage')) {
             return null;
         }
+        $coverage = $request->input('coverage');
+        if (is_array($coverage)) {
+            foreach (array_keys(EventCoverage::ROLES) as $role) {
+                $number = $coverage[$role]['whatsapp'] ?? null;
+                if (!is_string($number) || !preg_match('/^\+?[0-9() .-]+$/D', $number)) {
+                    continue;
+                }
+
+                $digits = preg_replace('/\D/', '', $number);
+                $coverage[$role]['whatsapp'] = match (true) {
+                    str_starts_with($number, '+') => '+'.$digits,
+                    preg_match('/^[1-9][0-9]{9,10}$/D', $digits) === 1 => '+55'.$digits,
+                    preg_match('/^55[1-9][0-9]{9,10}$/D', $digits) === 1 => '+'.$digits,
+                    default => $number,
+                };
+            }
+
+            $request->merge(['coverage' => $coverage]);
+        }
+
         $data = $request->validate([
             'coverage' => 'required|array:type,starts_at,ends_at,deadline,same,photo,video',
             'coverage.type' => ['required', Rule::in(array_keys(EventCoverage::TYPES))],
@@ -151,6 +171,9 @@ class ShakeEventController
             'coverage.*.email' => 'nullable|email|max:254',
             'coverage.*.whatsapp' => ['nullable', 'regex:/^\+[1-9][0-9]{7,14}$/D'],
             'coverage.*.channel' => ['nullable', Rule::in(array_keys(EventCoverage::CHANNELS))],
+        ], [
+            'coverage.photo.whatsapp.regex' => 'Informe o WhatsApp do fotógrafo com DDD, como (91) 99999-9999. Para números de fora do Brasil, inclua o + e o código do país.',
+            'coverage.video.whatsapp.regex' => 'Informe o WhatsApp do filmmaker com DDD, como (91) 99999-9999. Para números de fora do Brasil, inclua o + e o código do país.',
         ])['coverage'];
 
         $roles = (new EventCoverage(['type' => $data['type']]))->roles();

@@ -43,8 +43,8 @@
                         <input type="email" id="coverage-{{ $role }}-email" name="coverage[{{ $role }}][email]" maxlength="254" value="{{ old('coverage.'.$role.'.email', $contacts[$role]['email'] ?? '') }}">
                     </div>
                     <div>
-                        <label for="coverage-{{ $role }}-whatsapp">WhatsApp com DDI</label>
-                        <input type="tel" id="coverage-{{ $role }}-whatsapp" name="coverage[{{ $role }}][whatsapp]" placeholder="+5591999999999" maxlength="16" value="{{ old('coverage.'.$role.'.whatsapp', $contacts[$role]['whatsapp'] ?? '') }}">
+                        <label for="coverage-{{ $role }}-whatsapp">WhatsApp com DDD</label>
+                        <input type="tel" id="coverage-{{ $role }}-whatsapp" name="coverage[{{ $role }}][whatsapp]" placeholder="(91) 99999-9999" maxlength="32" value="{{ old('coverage.'.$role.'.whatsapp', $contacts[$role]['whatsapp'] ?? '') }}">
                     </div>
                     <div>
                         <label for="coverage-{{ $role }}-channel">Canal para receber o link</label>
