@@ -22,7 +22,7 @@ class ShakeEvent extends Model
     ];
 
     protected $fillable = [
-        'title', 'event_date', 'starts_at', 'ends_at', 'address', 'quantity',
+        'title', 'event_date', 'starts_at', 'ends_at', 'address', 'maps_url', 'quantity',
         'quantity_unit', 'mascot', 'status', 'responsible', 'notes', 'all_day', 'ends_on',
     ];
 
@@ -36,6 +36,13 @@ class ShakeEvent extends Model
     public function coverageDeliveries(): HasMany
     {
         return $this->hasMany(EventCoverageDelivery::class);
+    }
+
+    public function mapsLink(): ?string
+    {
+        return $this->maps_url ?: ($this->address
+            ? 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($this->address)
+            : null);
     }
 
     public function startLabel(): string

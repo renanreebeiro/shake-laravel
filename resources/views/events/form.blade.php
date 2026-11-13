@@ -42,6 +42,10 @@
             <label for="address">Endereço</label>
             <input id="address" name="address" maxlength="250" placeholder="Rua, número, bairro e cidade" value="{{ old('address', $event->address) }}" required>
 
+            <label for="maps_url">Link do ponto exato no Google Maps</label>
+            <input id="maps_url" name="maps_url" type="url" maxlength="2048" placeholder="https://maps.app.goo.gl/…" value="{{ old('maps_url', $event->maps_url) }}" aria-describedby="maps-help">
+            <p id="maps-help">No Maps, selecione o local ou o pino e use Compartilhar → Copiar link. <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">Abrir Google Maps ↗</a></p>
+
             <div class="events-fields">
                 <div>
                     <label for="quantity">Quantidade</label>

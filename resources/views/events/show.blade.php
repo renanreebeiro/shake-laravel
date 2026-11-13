@@ -16,10 +16,9 @@
             <div>
                 <dt>Endereço</dt>
                 <dd>
-                    @if($event->address !== '')
-                        <a href="https://www.google.com/maps/search/?api=1&amp;query={{ rawurlencode($event->address) }}" target="_blank" rel="noopener noreferrer">{{ $event->address }} ↗</a>
-                    @else
-                        A definir
+                    {{ $event->address ?: 'A definir' }}
+                    @if($event->mapsLink())
+                        <br><a href="{{ $event->mapsLink() }}" target="_blank" rel="noopener noreferrer">{{ $event->maps_url ? 'Abrir ponto exato no Google Maps' : 'Buscar endereço no Google Maps' }} ↗</a>
                     @endif
                 </dd>
             </div>

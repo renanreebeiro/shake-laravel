@@ -193,6 +193,21 @@ class ShakeEventController
             )],
             'ends_on' => 'nullable|date_format:Y-m-d|after_or_equal:event_date',
             'address' => 'required|string|max:250',
+            'maps_url' => ['nullable', 'url:https', 'max:2048', function ($attribute, $value, $fail) {
+                $url = parse_url($value);
+                $host = strtolower($url['host'] ?? '');
+                $path = $url['path'] ?? '';
+                $mapsPath = preg_match('~^/maps(?:/|$)~', $path);
+                $valid = match ($host) {
+                    'maps.app.goo.gl', 'maps.google.com', 'maps.google.com.br' => true,
+                    'goo.gl' => str_starts_with($path, '/maps/'),
+                    'google.com', 'www.google.com', 'google.com.br', 'www.google.com.br' => $mapsPath,
+                    default => false,
+                };
+                if (!$valid || isset($url['user']) || isset($url['pass']) || isset($url['port'])) {
+                    $fail('Cole um link de compartilhamento do Google Maps.');
+                }
+            }],
             'quantity' => 'required|integer|min:1|max:1000000',
             'quantity_unit' => 'required|string|max:40',
             'mascot' => ['required', Rule::in(array_keys(ShakeEvent::MASCOT))],
