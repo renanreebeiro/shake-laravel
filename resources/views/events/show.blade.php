@@ -28,6 +28,10 @@
                 <div><dt>Responsável</dt><dd>{{ $event->responsible }}</dd></div>
             @endif
         </dl>
+        @if($event->maps_embed_url)
+            <h2>Mapa do evento</h2>
+            <iframe src="{{ $event->maps_embed_url }}" title="Mapa do local do evento" loading="lazy" referrerpolicy="no-referrer" class="event-map" allowfullscreen></iframe>
+        @endif
         @if($event->notes)
             <h2>Observações para a equipe</h2>
             <p class="events-notes">{{ $event->notes }}</p>

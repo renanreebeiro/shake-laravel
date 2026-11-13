@@ -205,6 +205,11 @@ class ShakeEventController
     private function validated(Request $request): array
     {
         $request->merge(['all_day' => $request->boolean('all_day')]);
+        $embed = $request->input('maps_embed_url');
+        if (is_string($embed) && strlen($embed) <= 12000
+            && preg_match('~^<iframe\b[^>]*?\ssrc=(["\'])(.*?)\1[^>]*>\s*</iframe>\s*$~is', $embed, $match)) {
+            $request->merge(['maps_embed_url' => html_entity_decode($match[2], ENT_QUOTES | ENT_HTML5, 'UTF-8')]);
+        }
         $validated = $request->validate([
             'title' => 'required|string|max:120',
             'event_date' => 'required|date_format:Y-m-d',
@@ -229,6 +234,11 @@ class ShakeEventController
                 };
                 if (!$valid || isset($url['user']) || isset($url['pass']) || isset($url['port'])) {
                     $fail('Cole um link de compartilhamento do Google Maps.');
+                }
+            }],
+            'maps_embed_url' => ['nullable', 'string', 'max:10000', function ($attribute, $value, $fail) {
+                if (!preg_match('~^https://www\.google\.com/maps/embed\?pb=[^\s<>"\']+$~D', $value)) {
+                    $fail('Cole o código gerado pelo Google Maps em Compartilhar → Incorporar um mapa.');
                 }
             }],
             'quantity' => 'required|integer|min:1|max:1000000',

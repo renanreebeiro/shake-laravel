@@ -22,7 +22,7 @@ class ShakeEvent extends Model
     ];
 
     protected $fillable = [
-        'title', 'event_date', 'starts_at', 'ends_at', 'address', 'maps_url', 'quantity',
+        'title', 'event_date', 'starts_at', 'ends_at', 'address', 'maps_url', 'maps_embed_url', 'quantity',
         'quantity_unit', 'mascot', 'status', 'responsible', 'notes', 'all_day', 'ends_on',
     ];
 

@@ -46,6 +46,10 @@
             <input id="maps_url" name="maps_url" type="url" maxlength="2048" placeholder="https://maps.app.goo.gl/…" value="{{ old('maps_url', $event->maps_url) }}" aria-describedby="maps-help">
             <p id="maps-help">No Maps, selecione o local ou o pino e use Compartilhar → Copiar link. <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">Abrir Google Maps ↗</a></p>
 
+            <label for="maps_embed_url">Prévia do mapa (opcional)</label>
+            <input id="maps_embed_url" name="maps_embed_url" maxlength="12000" value="{{ old('maps_embed_url', $event->maps_embed_url) }}" aria-describedby="maps-embed-help">
+            <p id="maps-embed-help">No computador, selecione o ponto no Google Maps e escolha Compartilhar → Incorporar um mapa → Copiar HTML. Cole o código aqui.</p>
+
             <div class="events-fields">
                 <div>
                     <label for="quantity">Quantidade</label>

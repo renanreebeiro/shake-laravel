@@ -80,3 +80,5 @@
 .coverage-section { min-width: 0; margin: 1.25rem 0 0; overflow-wrap: anywhere; }
 fieldset.coverage-section { padding: .75rem 1rem 1rem; border: 1px solid var(--border); border-radius: .65rem; }
 .coverage-section legend { padding-inline: .35rem; font-weight: 800; }
+
+.event-map { display: block; height: clamp(220px, 40vw, 340px); margin-block: .85rem 1.4rem; }
