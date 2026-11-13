@@ -68,3 +68,10 @@ Artisan::command('shake:calendar-sync', function () {
 if (app(\App\Services\ShakeGoogleCalendar::class)->connected()) {
     \Illuminate\Support\Facades\Schedule::command('shake:calendar-sync')->everyFiveMinutes();
 }
+
+Artisan::command('shake:coverage-sync', function () {
+    \App\Models\ShakeEvent::whereHas('coverage', fn ($query) => $query->where('pending', true))
+        ->eachById(fn ($event) => app(\App\Services\SyncEventCoverage::class)->run($event));
+})->purpose('Processar coberturas audiovisuais pendentes');
+
+\Illuminate\Support\Facades\Schedule::command('shake:coverage-sync')->everyMinute()->withoutOverlapping();

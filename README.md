@@ -75,3 +75,32 @@ cancelado na Central. Cancelar pelo Kanban não exclui um evento do Google.
 Se os mesmos dados forem alterados dos dois lados entre sincronizações, a rotina
 preserva as duas versões e conta um conflito no resultado. Para resolver, deixe
 título, local e horários iguais nos dois lados e rode a sincronização novamente.
+
+### Cobertura audiovisual
+
+- Aplique a migração com `php artisan migrate --force` e publique
+  `public/assets/events.css` na pasta de arquivos públicos da hospedagem.
+- Habilite a Google Drive API e cadastre o retorno OAuth
+  `https://documentos.shakeburger.com.br/eventos/cobertura/drive/retorno`.
+  Configure `SHAKE_DRIVE_CLIENT_ID` e `SHAKE_DRIVE_CLIENT_SECRET` no `.env` privado.
+  A autorização do Drive é separada da Agenda. O Google solicita acesso amplo
+  ao Drive para que a Central possa validar uma pasta existente informada por
+  link e administrar suas subpastas. Use uma conta empresarial com arquivos
+  destinados à operação. O administrador conecta em **Eventos → Configurar
+  Google Drive da cobertura** e informa uma pasta própria e privada no Meu Drive.
+- O e-mail usa o SMTP da Central. Configure `MAIL_MAILER=smtp`, o servidor,
+  as credenciais e o remetente, e habilite `SHAKE_COVERAGE_EMAIL_ENABLED=true`.
+- Para WhatsApp, use um número da Cloud API e um modelo aprovado em português
+  do Brasil com sete parâmetros no corpo, nesta ordem: nome, evento, data,
+  horário, endereço, prazo e links. Use o canal para profissionais que aceitaram
+  receber mensagens. Configure as variáveis `SHAKE_WHATSAPP_*` do `.env.example`.
+- Rode `php artisan config:clear` depois de configurar. O salvamento solicita
+  processamento imediato. Na Hostinger, confirme que o cron chama
+  `php artisan schedule:run` a cada minuto ou configure uma tarefa específica
+  com `php artisan shake:coverage-sync` para processar coberturas pendentes.
+- A pasta principal de um evento permanece vinculada mesmo se a configuração
+  global mudar. As pastas por função isolam o acesso inclusive em coberturas
+  de um único tipo. Mudanças de contato removem as permissões atribuídas pela
+  integração na função. O status Enviado significa aceito pelo serviço de envio.
+  Se o serviço não confirmar o envio, confira se houve entrega antes de autorizar
+  a repetição na ficha do evento.

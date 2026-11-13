@@ -110,7 +110,11 @@ class SyncShakeCalendar
 
         if ($remoteChanged) {
             $local->fill($incoming);
+            $renameCoverage = $local->isDirty(['title', 'event_date']);
             $this->link($local, $remote, $calendarKey);
+            if ($renameCoverage) {
+                $local->coverage()->update(['pending' => true]);
+            }
 
             return 'atualizados';
         }

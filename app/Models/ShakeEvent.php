@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ShakeEvent extends Model
 {
@@ -25,6 +27,16 @@ class ShakeEvent extends Model
     ];
 
     protected $casts = ['event_date' => 'immutable_date', 'ends_on' => 'immutable_date', 'all_day' => 'boolean'];
+
+    public function coverage(): HasOne
+    {
+        return $this->hasOne(EventCoverage::class);
+    }
+
+    public function coverageDeliveries(): HasMany
+    {
+        return $this->hasMany(EventCoverageDelivery::class);
+    }
 
     public function startLabel(): string
     {

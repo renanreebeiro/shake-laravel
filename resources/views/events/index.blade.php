@@ -16,6 +16,10 @@
         </form>
     @endif
 
+    @if(auth()->user()->is_admin)
+        <p><a href="{{ route('coverage.drive') }}">Configurar Google Drive da cobertura</a></p>
+    @endif
+
     <div class="events-toolbar">
         <nav class="events-switch" aria-label="Visualização dos eventos">
             <a href="{{ route('events.index') }}" @if($view === 'calendar') aria-current="page" @endif>Calendário</a>

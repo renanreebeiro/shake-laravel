@@ -76,3 +76,7 @@
     .events-three > :first-child { grid-column: 1 / -1; }
     .topbar { flex-wrap: wrap; }
 }
+
+.coverage-section { min-width: 0; margin: 1.25rem 0 0; overflow-wrap: anywhere; }
+fieldset.coverage-section { padding: .75rem 1rem 1rem; border: 1px solid var(--border); border-radius: .65rem; }
+.coverage-section legend { padding-inline: .35rem; font-weight: 800; }

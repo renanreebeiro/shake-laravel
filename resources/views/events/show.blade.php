@@ -34,4 +34,5 @@
             <p class="events-notes">{{ $event->notes }}</p>
         @endif
     </section>
+    @include('events.coverage-details')
 @endsection

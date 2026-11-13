@@ -75,6 +75,7 @@
             <label for="notes">Observações para a equipe</label>
             <textarea id="notes" name="notes" maxlength="4000" required>{{ old('notes', $event->notes) }}</textarea>
 
+            @include('events.coverage-form')
             <button type="submit">Salvar evento</button>
         </form>
     </section>

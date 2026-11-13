@@ -1,5 +1,6 @@
 <?php
 use App\Http\Controllers\ShakeEventController;
+use App\Http\Controllers\CoverageDriveController;
 use App\Http\Controllers\ShakeCalendarConnectionController;
 use App\Http\Controllers\TeamUserController;
 use App\Http\Middleware\RequireAreaAccess;
@@ -45,6 +46,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/integracoes/google-agenda/retorno', [ShakeCalendarConnectionController::class, 'callback'])->name('calendar.callback');
 
     Route::middleware(RequireAreaAccess::class.':events')->group(function () {
+        Route::get('/eventos/cobertura/drive', [CoverageDriveController::class, 'show'])->name('coverage.drive');
+        Route::post('/eventos/cobertura/drive', [CoverageDriveController::class, 'start'])->name('coverage.drive.connect');
+        Route::get('/eventos/cobertura/drive/retorno', [CoverageDriveController::class, 'callback'])->name('coverage.drive.callback');
+        Route::post('/eventos/cobertura/pasta', [CoverageDriveController::class, 'folder'])->name('coverage.drive.folder');
+        Route::post('/eventos/{event}/cobertura/tentar', [ShakeEventController::class, 'retryCoverage'])->name('coverage.retry');
         Route::resource('eventos', ShakeEventController::class)
             ->parameters(['eventos' => 'event'])
             ->names('events')
