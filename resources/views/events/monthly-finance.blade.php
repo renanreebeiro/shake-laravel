@@ -1,6 +1,9 @@
 @extends('events.layout')
 @section('title', 'Relatório financeiro mensal')
 @use(App\Models\EventMoney)
+@push('head')
+    @include('events.monthly-finance-style')
+@endpush
 @section('content')
     <a href="{{ route('events.index') }}">‹ Voltar a Eventos</a>
     <div class="finance-report">
